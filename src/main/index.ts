@@ -1,16 +1,17 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import addEventListener from './event'
+import createTray from './tray'
 
 function createWindow(): void {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
+    frame: false,
+    icon: join(__dirname, '../../resources/logo.jpg'),
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -26,49 +27,88 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  addEventListener(mainWindow)
+  createTray(mainWindow)
+
+  // 添加右键菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '还原',
+      click: () => {
+        mainWindow.restore()
+      }
+    },
+    {
+      label: '最小化',
+      role: 'minimize'
+    },
+    {
+      label: '最大化',
+      click: () => {
+        mainWindow.maximize()
+      }
+    },
+    {
+      label: '刷新',
+      role: 'reload'
+    },
+    { type: 'separator' },
+    {
+      label: '关闭',
+      role: 'close'
+    }
+  ])
+  mainWindow.webContents.on('context-menu', () => {
+    contextMenu.popup()
+  })
+
+  // 可拖拽窗体
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      document.addEventListener('mousedown', (e) => {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+          window.isDragging = true;
+          offset = { x: e.screenX - window.screenX, y: e.screenY - window.screenY };
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (window.isDragging) {
+          const { screenX, screenY } = e;
+          window.moveTo(screenX - offset.x, screenY - offset.y);
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        window.isDragging = false;
+      });
+    `)
+  })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+  // 在开发中默认使用F12打开或关闭DevTools
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
   createWindow()
 
   app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.

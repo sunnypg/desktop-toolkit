@@ -1,6 +1,13 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import Icons from 'unplugin-icons/vite'
+import IconsResolver from 'unplugin-icons/resolver'
+
+const pathRenderer = resolve(__dirname, 'src/renderer')
 
 export default defineConfig({
   main: {
@@ -15,6 +22,32 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [vue()]
+    plugins: [
+      vue(),
+      AutoImport({
+        imports: ['vue'], // 自动导入 Vue 相关函数，如：ref, reactive, toRef 等
+        resolvers: [
+          ElementPlusResolver(),
+          // 自动导入图标组件
+          IconsResolver({
+            prefix: 'Icon'
+          })
+        ],
+        dts: resolve(pathRenderer, 'auto-imports.d.ts')
+      }),
+      Components({
+        resolvers: [
+          ElementPlusResolver(),
+          // 自动注册图标组件
+          IconsResolver({
+            enabledCollections: ['ep']
+          })
+        ],
+        dts: resolve(pathRenderer, 'components.d.ts')
+      }),
+      Icons({
+        autoInstall: true
+      })
+    ]
   }
 })
