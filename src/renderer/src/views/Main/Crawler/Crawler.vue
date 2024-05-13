@@ -3,6 +3,9 @@
     <el-card class="box-card">
       <el-button type="primary" @click="showDialog">添加网址</el-button>
       <el-button type="primary" @click="start" :disabled="tableData.length === 0">爬取</el-button>
+      <el-tag class="save-path" v-if="savePath" @click="openSavePath(savePath)"
+        >保存路径：{{ savePath }}</el-tag
+      >
       <el-table :data="tableData" height="calc(100vh - 150px)">
         <el-table-column align="center" prop="address" label="网址" show-overflow-tooltip />
         <el-table-column align="center" prop="style" label="样式表">
@@ -45,7 +48,11 @@ import CrawlerDialog from './cps/CrawlerDialog.vue'
 
 const crawlerDialogRef = ref<any>()
 const tableData = ref<any[]>([])
+const savePath = ref<string>()
+const headless = ref<boolean>()
 const confirm = (value) => {
+  savePath.value = value.savePath
+  headless.value = value.headless
   tableData.value = value.address.map((item) => ({
     address: item,
     style: 10,
@@ -84,6 +91,21 @@ const start = () => {
     add(row, 'script', 20)
     add(row, 'image', 30)
   })
+  const urls = tableData.value.map((row) => row.address)
+  const options = {
+    urls,
+    root: savePath.value,
+    headless: headless.value
+  }
+  window.electron.ipcRenderer.send('start', options)
+}
+
+const openSavePath = async (path) => {
+  const res = await window.electron.ipcRenderer.invoke('open-dir', path)
+  ElMessage({
+    message: res.message,
+    type: res.isExist ? 'success' : 'error'
+  })
 }
 
 const showDialog = () => {
@@ -91,4 +113,9 @@ const showDialog = () => {
 }
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+.save-path {
+  margin-left: 10px;
+  cursor: pointer;
+}
+</style>

@@ -90,6 +90,17 @@ function createWindow(): void {
       });
     `)
   })
+
+  // 避免启动多个app
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore()
+      }
+      mainWindow.focus()
+      mainWindow.show()
+    }
+  })
 }
 
 app.whenReady().then(() => {

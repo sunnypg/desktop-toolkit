@@ -16,6 +16,9 @@
           </template>
         </el-input>
       </el-form-item>
+      <el-form-item label="无头模式" prop="headless">
+        <el-switch v-model="form.headless" />
+      </el-form-item>
     </el-form>
     <template #footer>
       <div>
@@ -39,7 +42,8 @@ const show = () => {
 const ruleFormRef = ref<FormInstance>()
 const form = ref<any>({
   address: null,
-  savePath: null
+  savePath: null,
+  headless: false
 })
 const rules = {
   address: [{ required: true, message: '请输入网址', trigger: 'blur' }],
@@ -67,13 +71,10 @@ const onClose = () => {
   dialogVisible.value = false
 }
 
-const selectDir = () => {
-  window.electron.ipcRenderer.send('selectDir')
+const selectDir = async () => {
+  const dir = await window.electron.ipcRenderer.invoke('selectDir')
+  form.value.savePath = dir
 }
-
-window.electron.ipcRenderer.on('selectDirReply', (_, message) => {
-  form.value.savePath = message
-})
 
 defineExpose({
   show

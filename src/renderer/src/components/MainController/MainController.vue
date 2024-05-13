@@ -1,39 +1,29 @@
 <template>
   <div class="main-controller">
-    <span @click="reload">
+    <span @click="resize('reload')">
       <el-icon><Refresh /></el-icon>
     </span>
-    <span @click="minimize">
+    <span @click="resize('minimize')">
       <el-icon><Minus /></el-icon>
     </span>
-    <span v-if="!isMax" @click="maximize">
+    <span v-if="!isMax" @click="resize('maximize')">
       <el-icon><FullScreen /></el-icon>
     </span>
-    <span v-if="isMax" @click="restore">
+    <span v-if="isMax" @click="resize('restore')">
       <el-icon><Connection /></el-icon>
     </span>
-    <span class="last" @click="close">
+    <span class="last" @click="resize('close')">
       <el-icon><Close /></el-icon>
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+
 const isMax = ref(false)
-function reload() {
-  window.electron.ipcRenderer.send('reload')
-}
-function minimize() {
-  window.electron.ipcRenderer.send('minimize')
-}
-function maximize() {
-  window.electron.ipcRenderer.send('maximize')
-}
-function restore() {
-  window.electron.ipcRenderer.send('restore')
-}
-function close() {
-  window.electron.ipcRenderer.send('close')
+function resize(type: string) {
+  window.electron.ipcRenderer.send('resize', type)
 }
 window.onresize = async () => {
   isMax.value = await window.electron.ipcRenderer.invoke('isMaximized')
