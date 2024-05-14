@@ -1,6 +1,6 @@
 import { ipcMain, dialog, shell } from 'electron'
-import Crawler, { ICrawlerOptions } from './crawler'
 const fs = require('fs').promises
+import Spider from './utils/spider'
 
 function checkDirectory(path) {
   return new Promise(async (resolve, reject) => {
@@ -40,10 +40,21 @@ export default function addEventListener(mainWindow) {
     operation[type]()
   })
 
-  ipcMain.on('start', (_, options: ICrawlerOptions) => {
-    const crawler = new Crawler(options)
-    crawler.getPages()
+  let spider: any = null
+  ipcMain.on('start', (_, options) => {
+    spider = new Spider(options)
+    spider.on('progress', ({ progress, type, current, total }) => {
+      mainWindow.webContents.send('progress', { progress, type, current, total })
+    })
+    spider.on('finish', (info) => {
+      mainWindow.webContents.send('finish', info)
+    })
   })
+
+  ipcMain.on('operate_spider', (_, { type, url }) => {
+    spider[type](url)
+  })
+
   ipcMain.handle('open-dir', (_, path) => {
     return new Promise(async (resolve, reject) => {
       const isExist = await checkDirectory(path)
@@ -61,7 +72,6 @@ export default function addEventListener(mainWindow) {
       }
     })
   })
-
   ipcMain.handle('isMaximized', () => {
     return mainWindow.isMaximized()
   })

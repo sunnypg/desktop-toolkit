@@ -1,36 +1,40 @@
 <template>
   <div class="crawler">
     <el-card class="box-card">
-      <el-button type="primary" @click="showDialog">添加网址</el-button>
-      <el-button type="primary" @click="start" :disabled="tableData.length === 0">爬取</el-button>
-      <el-tag class="save-path" v-if="savePath" @click="openSavePath(savePath)"
-        >保存路径：{{ savePath }}</el-tag
+      <el-button type="primary" @click="showDialog" :disabled="spiderStatus">添加网址</el-button>
+      <el-button type="primary" @click="getPages" :disabled="tableData.length === 0 || spiderStatus"
+        >爬取</el-button
       >
+      <span v-if="savePath">
+        <el-tag class="save-path" @click="openSavePath(savePath)">保存路径：{{ savePath }}</el-tag>
+        <el-tag class="select-path" @click="selectDir"
+          ><el-icon><Edit /></el-icon
+        ></el-tag>
+      </span>
       <el-table :data="tableData" height="calc(100vh - 150px)">
         <el-table-column align="center" prop="address" label="网址" show-overflow-tooltip />
-        <el-table-column align="center" prop="style" label="样式表">
+        <el-table-column align="center" prop="css" label="样式表">
           <template #default="scope">
-            <el-progress type="dashboard" :width="50" :percentage="scope.row.style" />
+            <el-progress type="dashboard" :width="50" :percentage="scope.row.css" />
           </template>
         </el-table-column>
-        <el-table-column align="center" prop="script" label="脚本">
+        <el-table-column align="center" prop="js" label="脚本">
           <template #default="scope">
-            <el-progress type="dashboard" :width="50" :percentage="scope.row.script" />
+            <el-progress type="dashboard" :width="50" :percentage="scope.row.js" />
           </template>
         </el-table-column>
-        <el-table-column align="center" prop="image" label="图片">
+        <el-table-column align="center" prop="img" label="图片">
           <template #default="scope">
-            <el-progress type="dashboard" :width="50" :percentage="scope.row.image" />
+            <el-progress type="dashboard" :width="50" :percentage="scope.row.img" />
           </template>
         </el-table-column>
         <el-table-column align="center" label="操作">
           <template #default="scope">
-            <el-tag
-              v-if="scope.row.style === 100 && scope.row.script === 100 && scope.row.image === 100"
-            >
+            <el-tag v-if="scope.row.css === 100 && scope.row.js === 100 && scope.row.img === 100">
               已完成
             </el-tag>
-            <el-button type="primary" v-else-if="scope.row.isPause" @click="goOn(scope.row)"
+            <el-tag v-else-if="scope.row.fail" type="danger"> 出错了 </el-tag>
+            <el-button type="primary" v-else-if="scope.row.isPause" @click="start(scope.row)"
               >继续</el-button
             >
             <el-button type="danger" v-else @click="pause(scope.row)">暂停</el-button>
@@ -50,54 +54,71 @@ const crawlerDialogRef = ref<any>()
 const tableData = ref<any[]>([])
 const savePath = ref<string>()
 const headless = ref<boolean>()
+const spiderStatus = ref<boolean>(false)
 const confirm = (value) => {
   savePath.value = value.savePath
   headless.value = value.headless
   tableData.value = value.address.map((item) => ({
     address: item,
-    style: 10,
-    script: 10,
-    image: 10,
-    isPause: true
+    css: 0,
+    js: 0,
+    img: 0,
+    isPause: true,
+    fail: false
   }))
 }
 
-const add = (obj, key, timeout) => {
-  if (obj[key] >= 100) return
-  const timer = setInterval(() => {
-    if (obj[key] >= 100 || obj.isPause) {
-      clearInterval(timer)
-      return
-    }
-    obj[key]++
-  }, timeout)
-}
-
-const goOn = (row) => {
+const start = (row) => {
   row.isPause = false
-  add(row, 'style', 10)
-  add(row, 'script', 20)
-  add(row, 'image', 30)
+  window.electron.ipcRenderer.send('operate_spider', { type: 'start', url: row.address })
 }
 
 const pause = (row) => {
   row.isPause = true
+  window.electron.ipcRenderer.send('operate_spider', { type: 'pause', url: row.address })
 }
 
-const start = () => {
+const getPages = () => {
+  spiderStatus.value = true
   tableData.value.forEach((row) => {
     row.isPause = false
-    add(row, 'style', 10)
-    add(row, 'script', 20)
-    add(row, 'image', 30)
   })
   const urls = tableData.value.map((row) => row.address)
   const options = {
     urls,
-    root: savePath.value,
+    savePath: savePath.value,
     headless: headless.value
   }
   window.electron.ipcRenderer.send('start', options)
+}
+
+window.electron.ipcRenderer.on('progress', (_, { progress, type }) => {
+  const [address, resourceType] = type.split('_')
+  tableData.value.forEach((row) => {
+    if (row.address === address) {
+      row[resourceType] = progress
+    }
+  })
+})
+
+window.electron.ipcRenderer.on('finish', (_, info) => {
+  if (info.type === 'all') {
+    spiderStatus.value = false
+  } else if (info.type === 'single') {
+    const row = tableData.value.find((row) => row.address === info.url)
+    if (info.status) {
+      row.css = 100
+      row.js = 100
+      row.img = 100
+    } else {
+      row.fail = true
+    }
+  }
+})
+
+const selectDir = async () => {
+  const dir = await window.electron.ipcRenderer.invoke('selectDir')
+  savePath.value = dir
 }
 
 const openSavePath = async (path) => {
@@ -114,7 +135,8 @@ const showDialog = () => {
 </script>
 
 <style lang="less" scoped>
-.save-path {
+.save-path,
+.select-path {
   margin-left: 10px;
   cursor: pointer;
 }
