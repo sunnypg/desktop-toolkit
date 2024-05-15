@@ -3,10 +3,10 @@ const cheerio = require('cheerio')
 const axios = require('axios').default
 const { createWriteStream } = require('fs')
 const fs = require('fs').promises
-const util = require('util')
 const path = require('path')
+import { IProgress } from '../../types/spider.type'
+import Logger from './logger'
 
-const appendFile = util.promisify(fs.appendFile)
 const typeToDir = {
   css: 'css',
   js: 'js',
@@ -36,19 +36,12 @@ const typeToDir = {
   ppt: 'ppt',
   pptx: 'ppt'
 }
-
-// 错误日志
-async function errorLog(path: string, errorMsg: string) {
-  const timestamp = new Date().toISOString()
-  const logMessage = `[${timestamp}] ${errorMsg}\n`
-  try {
-    await appendFile(path, logMessage)
-  } catch (error) {
-    await appendFile(path, logMessage)
-  }
-}
-
-async function downloadResource(url: string, savePath: string, errorPath: string) {
+let logger: any = null
+async function downloadResource(
+  url: string,
+  savePath: string,
+  errorPath: string
+): Promise<{ status: string; message: string }> {
   return new Promise(async (resolve) => {
     try {
       const response = await axios.get(url, { responseType: 'stream' })
@@ -61,25 +54,22 @@ async function downloadResource(url: string, savePath: string, errorPath: string
       response.data.pipe(writeStream) // 将响应流连接到写入流
 
       writeStream.on('finish', () => {
-        // console.log(`写入成功：${savePath}`);
-        resolve({ message: '写入成功' })
+        resolve({ status: 'success', message: '写入成功' })
       })
 
+      errorPath = path.join(errorPath, 'error.txt')
       response.data.on('error', async (err: any) => {
-        errorLog(path.join(errorPath, 'error.txt'), `axios下载失败: ${err.message}`)
-        resolve({ message: 'axios下载失败' })
+        logger.error(url, 'axios下载过程失败', err)
+        resolve({ status: 'fail', message: 'axios下载过程失败' })
       })
 
       writeStream.on('error', (err: any) => {
-        errorLog(path.join(errorPath, 'error.txt'), `写入失败: ${err.message}`)
-        resolve({ message: '写入失败' })
+        logger.error(url, '写入失败', err)
+        resolve({ status: 'fail', message: '写入失败' })
       })
-    } catch (error: any) {
-      errorLog(
-        path.join(errorPath, 'error.txt'),
-        `downloadResource 下载文件时出错: ${error.message}`
-      )
-      resolve({ message: 'downloadResource下载出错' })
+    } catch (err: any) {
+      logger.error(url, 'downloadResource下载文件失败', err)
+      resolve({ status: 'fail', message: 'downloadResource 下载文件失败' })
     }
   })
 }
@@ -133,6 +123,10 @@ async function getResource(page: any) {
   return { allCss, allJs, allImg, allBg }
 }
 
+function joinPath(baseUrl: string, relativePath: string) {
+  return new URL(path.join(baseUrl, relativePath)).href
+}
+
 class Site {
   page: any
   url: string
@@ -171,7 +165,7 @@ class Site {
       // 保存HTML
       let htmlContent = await this.page.content()
       htmlContent = this.modifyExternalLinks(htmlContent)
-      const dir = this.url.split('//')[1].split('.')[0]
+      const dir = new URL(this.url).hostname
       this.saveDir = path.join(this.savePath, dir)
       await fs.mkdir(this.saveDir, { recursive: true })
       await fs.writeFile(path.join(this.saveDir, 'index.html'), htmlContent, 'utf8')
@@ -182,7 +176,14 @@ class Site {
       this.allCss = allCss
       this.allJs = allJs
       this.allImg = allImg
-      this.allBg = allBg
+      this.allBg = allBg.map((bgUrl) => {
+        if (!bgUrl.startsWith('http')) {
+          bgUrl = joinPath(this.url, bgUrl.replace('../', ''))
+        }
+        return bgUrl
+      })
+
+      this.dispatch('resource')
 
       // 下载资源
       this.download('css')
@@ -239,39 +240,55 @@ class Site {
     if (resource_index >= allResource.length || this.isPause) return
 
     const url = allResource[resource_index]
-    const savePath = path.join(this.saveDir, 'static', type, path.basename(url))
-    await downloadResource(url, savePath, this.savePath)
-    // console.log(`${css}下载完成 存放到${this.savePath}`);
-    if (this.eventMap.has('progress')) {
-      let progress = Math.round((resource_index / allResource.length) * 100)
+    const savePath = path.join(
+      this.saveDir,
+      'static',
+      type === 'bg' ? 'image' : type,
+      path.basename(url)
+    )
+    const res = await downloadResource(url, savePath, this.savePath)
+    this[index]++
+    this.dispatch('progress', (): IProgress => {
+      let current = resource_index
+      let total = allResource.length
       let type_progress = `${this.url}_${type}`
       if (type === 'bg' || type === 'img') {
-        progress = Math.round(
-          ((this.img_index + this.bg_index) / (this.allImg.length + this.allImg.length)) * 100
-        )
+        current = this.img_index + this.bg_index
+        total = this.allImg.length + this.allBg.length
         type_progress = `${this.url}_img`
       }
-      const progressInfo = {
+      let progress = Math.round((current / total) * 100)
+      return {
+        status: res.status,
+        message: res.message,
         progress,
-        type: type_progress,
-        current: resource_index,
-        total: allResource.length
+        type_progress,
+        type,
+        current,
+        total
       }
-      this.eventMap.get('progress')!.forEach((event) => event(progressInfo))
+    })
+    // 爬取完成
+    if (this.isFinished()) {
+      this.dispatch('finish', this.url)
     }
-    this[index]++
-    if (
+    this.download(type)
+  }
+
+  private dispatch(name: string, arg?: string | object | Function) {
+    if (this.eventMap.has(name)) {
+      if (typeof arg === 'function') arg = arg()
+      this.eventMap.get(name)!.forEach((event) => event(arg))
+    }
+  }
+
+  private isFinished() {
+    return (
       this.css_index === this.allCss.length &&
       this.js_index === this.allJs.length &&
       this.img_index === this.allImg.length &&
       this.bg_index === this.allBg.length
-    ) {
-      // 爬取完成
-      if (this.eventMap.has('finish')) {
-        this.eventMap.get('finish')!.forEach((event) => event(this.url))
-      }
-    }
-    this.download(type)
+    )
   }
 
   // 修改外部链接
@@ -309,6 +326,7 @@ class Site {
 export default class Spider {
   urls: string[]
   finish_num: number
+  resource_num: number
   savePath: string
   headless: boolean
   siteMap: Map<string, Site>
@@ -316,11 +334,13 @@ export default class Spider {
   constructor(options) {
     this.urls = options.urls
     this.finish_num = 0
+    this.resource_num = 0
     this.savePath = options.savePath
     this.headless = options.headless
     this.siteMap = new Map()
     this.eventMap = new Map()
     this.init()
+    logger = new Logger({ savePath: `${this.savePath}/error.log` })
   }
 
   async init() {
@@ -338,40 +358,29 @@ export default class Spider {
           url,
           savePath: this.savePath
         })
-        site.on('progress', (progressInfo) => {
-          if (this.eventMap.has('progress')) {
-            this.eventMap.get('progress')!.forEach((event) => event(progressInfo))
-          }
+        // 监听资源情况
+        site.on('resource', () => {
+          this.resource_num++
+          if (this.resource_num >= this.urls.length) browser.close() // 资源获取完毕，关闭浏览器
         })
+        // 监听进度
+        site.on('progress', (progressInfo) => {
+          this.dispatch('progress', progressInfo)
+        })
+        // 监听完成
         site.on('finish', (finish_url) => {
           this.finish_num++
-          if (this.eventMap.has('finish')) {
-            this.eventMap
-              .get('finish')!
-              .forEach((event) => event({ type: 'single', status: true, url: finish_url }))
-          }
-          if (this.finish_num === this.urls.length) {
-            // 爬虫结束
-            browser.close()
-            if (this.eventMap.has('finish')) {
-              this.eventMap.get('finish')!.forEach((event) => event({ type: 'all', status: true }))
-            }
+          this.dispatch('finish', { type: 'single', status: 'success', url: finish_url })
+          if (this.finish_num >= this.urls.length) {
+            this.dispatch('finish', { type: 'all', status: 'success', url: null }) // 爬虫结束
           }
         })
         this.siteMap.set(url, site)
       } catch (error) {
         this.finish_num++
-        if (this.eventMap.has('finish')) {
-          this.eventMap
-            .get('finish')!
-            .forEach((event) => event({ type: 'single', status: false, url }))
-        }
-        if (this.finish_num === this.urls.length) {
-          // 爬虫结束
-          browser.close()
-          if (this.eventMap.has('finish')) {
-            this.eventMap.get('finish')!.forEach((event) => event({ type: 'all', status: true }))
-          }
+        this.dispatch('finish', { type: 'single', status: 'fail', url })
+        if (this.finish_num >= this.urls.length) {
+          this.dispatch('finish', { type: 'all', status: 'success', url: null }) // 爬虫结束
         }
       }
     })
@@ -390,6 +399,13 @@ export default class Spider {
       this.eventMap.set(event, [callback])
     } else {
       this.eventMap.get(event)!.push(callback)
+    }
+  }
+
+  private dispatch(name: string, arg: string | object | Function) {
+    if (this.eventMap.has(name)) {
+      if (typeof arg === 'function') arg = arg()
+      this.eventMap.get(name)!.forEach((event) => event(arg))
     }
   }
 }

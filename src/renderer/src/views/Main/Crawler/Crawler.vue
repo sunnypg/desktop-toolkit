@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CrawlerDialog from './cps/CrawlerDialog.vue'
+import { IProgress } from '../../../../../types/spider.type'
 
 const crawlerDialogRef = ref<any>()
 const tableData = ref<any[]>([])
@@ -92,26 +93,27 @@ const getPages = () => {
   window.electron.ipcRenderer.send('start', options)
 }
 
-window.electron.ipcRenderer.on('progress', (_, { progress, type }) => {
-  const [address, resourceType] = type.split('_')
+window.electron.ipcRenderer.on('progress', (_, progressInfo: IProgress) => {
+  console.log(progressInfo)
+
+  const [address, resourceType] = progressInfo.type_progress.split('_')
   tableData.value.forEach((row) => {
     if (row.address === address) {
-      row[resourceType] = progress
+      row[resourceType] = progressInfo.progress
     }
   })
 })
 
-window.electron.ipcRenderer.on('finish', (_, info) => {
-  if (info.type === 'all') {
+window.electron.ipcRenderer.on('finish', (_, { type, status, url }) => {
+  if (type === 'all') {
     spiderStatus.value = false
-  } else if (info.type === 'single') {
-    const row = tableData.value.find((row) => row.address === info.url)
-    if (info.status) {
+  } else if (type === 'single') {
+    const row = tableData.value.find((row) => row.address === url)
+    row.fail = status === 'fail'
+    if (status === 'success') {
       row.css = 100
       row.js = 100
       row.img = 100
-    } else {
-      row.fail = true
     }
   }
 })

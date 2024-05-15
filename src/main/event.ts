@@ -1,6 +1,7 @@
 import { ipcMain, dialog, shell } from 'electron'
 const fs = require('fs').promises
 import Spider from './utils/spider'
+import { IProgress } from '../types/spider.type'
 
 function checkDirectory(path) {
   return new Promise(async (resolve, reject) => {
@@ -43,14 +44,13 @@ export default function addEventListener(mainWindow) {
   let spider: any = null
   ipcMain.on('start', (_, options) => {
     spider = new Spider(options)
-    spider.on('progress', ({ progress, type, current, total }) => {
-      mainWindow.webContents.send('progress', { progress, type, current, total })
+    spider.on('progress', (progressInfo: IProgress) => {
+      mainWindow.webContents.send('progress', progressInfo)
     })
-    spider.on('finish', (info) => {
-      mainWindow.webContents.send('finish', info)
+    spider.on('finish', ({ type, status, url }) => {
+      mainWindow.webContents.send('finish', { type, status, url })
     })
   })
-
   ipcMain.on('operate_spider', (_, { type, url }) => {
     spider[type](url)
   })
