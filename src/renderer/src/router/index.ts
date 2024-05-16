@@ -24,6 +24,10 @@ const router = createRouter({
           component: () => import('../views/Main/Crawler/Crawler.vue')
         },
         {
+          path: '/main/browser',
+          component: () => import('../views/Main/Browser/Browser.vue')
+        },
+        {
           path: '/main/setting',
           component: () => import('../views/Main/Setting/Setting.vue')
         }

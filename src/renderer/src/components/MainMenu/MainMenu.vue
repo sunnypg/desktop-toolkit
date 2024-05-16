@@ -12,7 +12,11 @@
           <el-icon><CrawlerIcon /></el-icon>
           <template #title>爬虫</template>
         </el-menu-item>
-        <el-menu-item index="2" @click="handleItemClick({ url: '/main/setting', index: '2' })">
+        <el-menu-item index="2" @click="handleItemClick({ url: '/main/browser', index: '2' })">
+          <el-icon><ChromeFilled /></el-icon>
+          <template #title>指纹浏览器</template>
+        </el-menu-item>
+        <el-menu-item index="3" @click="handleItemClick({ url: '/main/setting', index: '3' })">
           <el-icon><Setting /></el-icon>
           <template #title>设置</template>
         </el-menu-item>
@@ -41,7 +45,6 @@
 <script setup lang="ts">
 import router from '@renderer/router'
 import avatar from '@renderer/assets/images/avatar.jpg'
-import { ElMessage, ElMessageBox } from 'element-plus'
 
 const defaultActive = localStorage.getItem('defaultActive')
 
