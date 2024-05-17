@@ -4,6 +4,7 @@ import Spider from './utils/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
 import BrowserPool from './utils/BrowserPool'
+import removeDir from './utils/removeDir'
 
 function checkDirectory(path) {
   return new Promise(async (resolve, reject) => {
@@ -99,11 +100,16 @@ export default function addEventListener(mainWindow) {
   browserPool.on('disconnected', (info) => {
     mainWindow.webContents.send('disconnected', info)
   })
-  ipcMain.handle('open', async (_, browser: IBrowser) => {
+  ipcMain.handle('open', async (_, browser) => {
+    browser = { ...browser, bookmarks: JSON.parse(browser.bookmarks) }
     await browserPool.open(browser)
   })
 
   ipcMain.handle('close', async (_, browser: IBrowser) => {
     await browserPool.close(browser.id)
+  })
+
+  ipcMain.handle('removeDir', async (_, url: string) => {
+    await removeDir(url)
   })
 }

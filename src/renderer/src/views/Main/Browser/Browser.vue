@@ -26,7 +26,7 @@
                   <el-dropdown-item @click="showEdit(row)"
                     ><el-button type="text" icon="Edit"></el-button
                   ></el-dropdown-item>
-                  <el-dropdown-item @click="remove(row.id)"
+                  <el-dropdown-item @click="remove(row)"
                     ><el-button type="text" icon="delete"></el-button
                   ></el-dropdown-item>
                 </el-dropdown-menu>
@@ -54,6 +54,10 @@ const tableData = ref<any[]>(
 )
 
 const confirm = (value) => {
+  value.proxyUrl =
+    value.proxy_type !== 'NoProxy'
+      ? `${value.proxy_type}://${value.username}:${value.password}@${value.host}:${value.port}`
+      : ''
   if (value.id) {
     for (let i = 0; i < tableData.value.length; i++) {
       if (tableData.value[i].id === value.id) {
@@ -67,14 +71,15 @@ const confirm = (value) => {
   localStorage.setItem('browserList', JSON.stringify(tableData.value))
 }
 
-const remove = (id) => {
+const remove = (row) => {
   ElMessageBox.confirm('您确定删除吗?', '警告', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
     .then(() => {
-      tableData.value = tableData.value.filter((item) => item.id !== id)
+      tableData.value = tableData.value.filter((item) => item.id !== row.id)
+      window.electron.ipcRenderer.invoke('removeDir', row.userDataDir)
       localStorage.setItem('browserList', JSON.stringify(tableData.value))
       ElMessage({
         type: 'success',
@@ -90,7 +95,12 @@ const remove = (id) => {
 }
 
 const openOrClose = async (row) => {
-  const options: IBrowser = { ...row, urls: row.urls.split('\n').map((item) => item.trim()) }
+  const options: IBrowser = {
+    ...row,
+    urls: row.urls.split('\n').map((item) => item.trim()),
+    bookmarks: JSON.stringify(row.bookmarks.map((item) => ({ title: item.title, url: item.url })))
+  }
+
   row.loading = true
   await window.electron.ipcRenderer.invoke(row.isOpen ? 'close' : 'open', options)
   row.loading = false

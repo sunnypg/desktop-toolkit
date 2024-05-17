@@ -1,6 +1,7 @@
 interface OptionsItem {
   label: string
   value: string
+  disabled?: boolean
 }
 
 export const WindowsOptions: OptionsItem[] = [
@@ -58,5 +59,43 @@ export const UAOptions: OptionsItem[] = [
   {
     label: 'UA 118',
     value: '118.0.5993.70'
+  }
+]
+
+export const proxyTypes: OptionsItem[] = [
+  {
+    label: 'No Proxy(本地直连)',
+    value: 'NoProxy'
+  },
+  {
+    label: 'SSH',
+    value: 'ssh'
+  },
+  {
+    label: 'HTTPS',
+    value: 'https'
+  },
+  {
+    label: 'HTTP',
+    value: 'http'
+  },
+  {
+    label: 'Socks5',
+    value: 'socks5'
+  },
+  {
+    label: 'IPFoxy(IPFoxy静态独享)',
+    value: 'IPFoxy',
+    disabled: true
+  },
+  {
+    label: 'IPFoxyauto(IPFoxy动态代理)',
+    value: 'IPFoxyauto',
+    disabled: true
+  },
+  {
+    label: 'Lumauto(Luminati动态代理)',
+    value: 'Luminati',
+    disabled: true
   }
 ]

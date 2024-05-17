@@ -1,3 +1,29 @@
 .main-menu .el-menu-item .el-menu-tooltip__trigger {
   padding: 0 15px;
 }
+
+.dialog-from {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* 选择器定位到特定元素 */
+.dialog-from::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* 滚动条轨道部分 */
+.dialog-from::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 滚动条滑块部分 */
+.dialog-from::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+}
+
+/* 当鼠标悬停在滑块上时 */
+.dialog-from::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
