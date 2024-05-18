@@ -13,6 +13,7 @@ export interface IBrowser {
   userAgent: string
   userDataDir: string
   proxyUrl?: string
-  webgl?: boolean
+  disable_webgl?: boolean
+  webgl_mode: 'none' | 'explicit' | 'implicit'
   bookmarks?: bookmarksItem[]
 }

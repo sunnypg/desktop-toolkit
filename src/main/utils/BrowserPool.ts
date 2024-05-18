@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer')
 import { IBrowser } from '../../types/browser.type'
+import fakeFingerPrint from './fakeFingerPrint'
+import setBookmarks from './setBookmarks'
 
 export default class BrowserPool {
   private browsers: Map<string, any>
@@ -20,7 +22,15 @@ export default class BrowserPool {
           args: [
             `--user-agent=${options.userAgent}`,
             `--proxy-server=${options.proxyUrl}`,
-            ...(options.webgl ? ['--disable-webgl'] : [])
+            ...(options.disable_webgl
+              ? [
+                  '--disable-webgl',
+                  '--disable-3d-apis',
+                  '--disable-webgl-image-chromium',
+                  '--disable-webgl2'
+                ]
+              : []),
+            `--webgl-antialiasing-mode=${options.webgl_mode || 'none'}`
           ],
           ignoreDefaultArgs: ['about:blank'],
           userDataDir: options.userDataDir
@@ -51,57 +61,10 @@ export default class BrowserPool {
           }
         })
         await fristPage.goto('chrome://bookmarks/')
-        await fristPage.evaluate(async (bookmarks: IBrowser['bookmarks'] = []) => {
-          function removeAllBookmarks() {
-            return new Promise((resolve, reject) => {
-              chrome.bookmarks.getTree(async (bookmarkTree) => {
-                try {
-                  for (const node of bookmarkTree) {
-                    await deleteBookmarkNode(node)
-                  }
-                  resolve('所有书签已成功删除')
-                } catch (error) {
-                  reject('删除书签时出错：' + error)
-                }
-              })
-            })
-          }
-
-          async function deleteBookmarkNode(bookmarkNode) {
-            if (bookmarkNode.children) {
-              for (const child of bookmarkNode.children) {
-                await deleteBookmarkNode(child)
-              }
-            }
-            try {
-              await new Promise((resolve, reject) => {
-                chrome.bookmarks.remove(bookmarkNode.id, (result) => {
-                  if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError.message)
-                  } else {
-                    resolve(result)
-                  }
-                })
-              })
-            } catch (error) {
-              console.error(`删除书签节点失败: ${error}`)
-            }
-          }
-
-          await removeAllBookmarks()
-
-          bookmarks.forEach((item) => {
-            chrome.bookmarks.search(item, async (results) => {
-              if (results.length === 0) {
-                chrome.bookmarks.create({
-                  parentId: '1',
-                  ...item
-                })
-              }
-            })
-          })
-        }, options.bookmarks)
-        fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' })
+        await setBookmarks(fristPage, options.bookmarks)
+        fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' }).then(() => {
+          fakeFingerPrint(fristPage)
+        })
         fristPage.setViewport({ width: windowSize.width, height: windowSize.height })
 
         options.urls.forEach(async (url) => {

@@ -100,17 +100,18 @@ const openOrClose = async (row) => {
     urls: row.urls.split('\n').map((item) => item.trim()),
     bookmarks: JSON.stringify(row.bookmarks.map((item) => ({ title: item.title, url: item.url })))
   }
-
+  const original_status = row.isOpen
   row.loading = true
   await window.electron.ipcRenderer.invoke(row.isOpen ? 'close' : 'open', options)
   row.loading = false
-  row.isOpen = !row.isOpen
+  row.isOpen = !original_status
 }
 
 window.electron.ipcRenderer.on('disconnected', (_, { id, urls }) => {
   const self = tableData.value.find((item) => item.id === id)
   self.urls = urls.join('\n')
   self.isOpen = false
+  self.loading = false
   localStorage.setItem('browserList', JSON.stringify(tableData.value))
 })
 

@@ -17,7 +17,7 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/crawler'
+          redirect: '/main/browser'
         },
         {
           path: '/main/crawler',

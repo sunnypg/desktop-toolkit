@@ -5,6 +5,7 @@ import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
 import BrowserPool from './utils/BrowserPool'
 import removeDir from './utils/removeDir'
+import { downloadBrowser, open } from './utils/downloadBrowser'
 
 function checkDirectory(path) {
   return new Promise(async (resolve, reject) => {
@@ -111,5 +112,13 @@ export default function addEventListener(mainWindow) {
 
   ipcMain.handle('removeDir', async (_, url: string) => {
     await removeDir(url)
+  })
+
+  ipcMain.on('download', async () => {
+    downloadBrowser()
+  })
+
+  ipcMain.on('open_chromium', async () => {
+    open()
   })
 }

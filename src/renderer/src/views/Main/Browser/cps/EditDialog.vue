@@ -93,16 +93,25 @@
           </el-form-item>
         </template>
         <el-form-item label="书签" prop="bookmarks">
-          <div
-            style="display: flex; justify-content: space-between"
-            v-for="item in bookmarks"
-            :key="item.id"
-          >
-            <el-input v-model="item.title" placeholder="请输入书签标题"></el-input>
-            <el-input v-model="item.url" placeholder="请输入书签网址"></el-input>
-            <el-button type="danger" icon="delete" @click="removeBookmark(item)"></el-button>
-          </div>
-          <el-button type="primary" icon="plus" @click="addBookmark"></el-button>
+          <template v-for="item in bookmarks" :key="item.id">
+            <el-row :gutter="10" style="width: 100%; margin-bottom: 5px">
+              <el-col :span="6">
+                <el-input v-model="item.title" placeholder="请输入书签标题"></el-input>
+              </el-col>
+              <el-col :span="17">
+                <el-input v-model="item.url" placeholder="请输入书签网址"></el-input>
+              </el-col>
+              <el-col :span="1">
+                <el-button
+                  type="text"
+                  style="color: #f56c6c"
+                  icon="delete"
+                  @click="removeBookmark(item)"
+                ></el-button>
+              </el-col>
+            </el-row>
+          </template>
+          <el-button type="text" icon="plus" @click="addBookmark">新增书签</el-button>
         </el-form-item>
       </el-form>
     </div>
