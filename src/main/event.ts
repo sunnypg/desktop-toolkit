@@ -1,11 +1,11 @@
 import { ipcMain, dialog, shell } from 'electron'
 const fs = require('fs').promises
-import Spider from './utils/spider'
+import Spider from './utils/spider/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
-import BrowserPool from './utils/BrowserPool'
+import BrowserPool from './utils/browser/BrowserPool'
 import removeDir from './utils/removeDir'
-import { downloadBrowser, open } from './utils/downloadBrowser'
+import { downloadBrowser, open } from './utils/browser/downloadBrowser'
 
 function checkDirectory(path) {
   return new Promise(async (resolve, reject) => {

@@ -4,7 +4,7 @@ const axios = require('axios').default
 const { createWriteStream } = require('fs')
 const fs = require('fs').promises
 const path = require('path')
-import { IProgress } from '../../types/spider.type'
+import { IProgress } from '../../../types/spider.type'
 import Logger from './logger'
 
 const typeToDir = {

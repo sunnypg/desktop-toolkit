@@ -1,5 +1,5 @@
 /// <reference types="chrome"/>
-import { IBrowser } from '../../types/browser.type'
+import { IBrowser } from '../../../types/browser.type'
 
 export default async function setBookmarks(page: any, bookmarks: IBrowser['bookmarks'] = []) {
   return await page.evaluate(async (bookmarks: IBrowser['bookmarks'] = []) => {

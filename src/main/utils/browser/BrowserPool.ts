@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer')
-import { IBrowser } from '../../types/browser.type'
+import { IBrowser } from '../../../types/browser.type'
 import fakeFingerPrint from './fakeFingerPrint'
 import setBookmarks from './setBookmarks'
 
