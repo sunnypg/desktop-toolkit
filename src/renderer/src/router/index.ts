@@ -17,7 +17,7 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/browser'
+          redirect: '/main/screen'
         },
         {
           path: '/main/crawler',
@@ -28,10 +28,18 @@ const router = createRouter({
           component: () => import('../views/Main/Browser/Browser.vue')
         },
         {
+          path: '/main/screen',
+          component: () => import('../views/Main/Screen/Screen.vue')
+        },
+        {
           path: '/main/setting',
           component: () => import('../views/Main/Setting/Setting.vue')
         }
       ]
+    },
+    {
+      path: '/cut',
+      component: () => import('../views/Main/Screen/Cut.vue')
     }
   ]
 })

@@ -8,18 +8,18 @@
         text-color="#8f95b2"
         active-text-color="#6c5dd3"
       >
-        <el-menu-item index="1" @click="handleItemClick({ url: '/main/crawler', index: '1' })">
-          <el-icon><CrawlerIcon /></el-icon>
-          <template #title>爬虫</template>
-        </el-menu-item>
-        <el-menu-item index="2" @click="handleItemClick({ url: '/main/browser', index: '2' })">
-          <el-icon><ChromeFilled /></el-icon>
-          <template #title>指纹浏览器</template>
-        </el-menu-item>
-        <el-menu-item index="3" @click="handleItemClick({ url: '/main/setting', index: '3' })">
-          <el-icon><Setting /></el-icon>
-          <template #title>设置</template>
-        </el-menu-item>
+        <template v-for="(item, index) in menuList">
+          <el-menu-item
+            :index="`${index}`"
+            @click="handleItemClick({ url: item.path, index: `${index}` })"
+          >
+            <el-icon>
+              <CrawlerIcon v-if="item.icon === 'CrawlerIcon'"></CrawlerIcon>
+              <Component :is="item.icon" v-else></Component
+            ></el-icon>
+            <template #title>{{ item.title }}</template>
+          </el-menu-item>
+        </template>
       </el-menu>
     </div>
     <div class="info">
@@ -45,8 +45,9 @@
 <script setup lang="ts">
 import router from '@renderer/router'
 import avatar from '@renderer/assets/images/avatar.jpg'
+import menuList from './menu'
 
-const defaultActive = localStorage.getItem('defaultActive')
+const defaultActive = localStorage.getItem('defaultActive') || ''
 
 function handleItemClick(item: any) {
   router.push(item.url)

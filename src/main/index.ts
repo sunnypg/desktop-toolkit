@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import addEventListener from './event'
 import createTray from './tray'
+import createCutWindow from './utils/screen/screenshot'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -72,7 +73,7 @@ function createWindow(): void {
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.webContents.executeJavaScript(`
       document.addEventListener('mousedown', (e) => {
-        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        if (e.target.tagName === 'HEADER') {
           window.isDragging = true;
           offset = { x: e.screenX - window.screenX, y: e.screenY - window.screenY };
         }
@@ -101,6 +102,12 @@ function createWindow(): void {
       mainWindow.show()
     }
   })
+
+  mainWindow.on('closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
+  })
 }
 
 app.whenReady().then(() => {
@@ -112,6 +119,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  createCutWindow()
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

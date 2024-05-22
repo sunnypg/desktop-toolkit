@@ -28,6 +28,7 @@
     "electron-updater": "^6.1.7",
     "element-plus": "^2.7.2",
     "fake-fingerprint": "^0.0.1",
+    "js-web-screen-shot": "^1.9.9-rc.18",
     "normalize.css": "^8.0.1",
     "puppeteer": "^22.8.0",
     "vue-router": "^4.3.2",
