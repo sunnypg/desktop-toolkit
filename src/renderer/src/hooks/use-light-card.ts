@@ -21,6 +21,7 @@ export const useLightCard = (option: IOptions = {}) => {
   const setLightStyle = () => {
     const { width = 60, height = 60, color = '#ff4132', blur = 40 } = option.light ?? {}
     const lightDom = lightRef.value
+    lightDom.style.pointerEvents = 'none' // 允许鼠标事件穿透
     lightDom.style.position = 'absolute'
     lightDom.style.width = `${width}px`
     lightDom.style.height = `${height}px`

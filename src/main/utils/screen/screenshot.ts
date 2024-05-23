@@ -3,13 +3,13 @@ import {
   ipcMain,
   desktopCapturer,
   webContents,
-  screen,
   clipboard,
   nativeImage,
   globalShortcut
 } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
+import { getSize } from '../utils'
 
 const selfWindows = async () =>
   await Promise.all(
@@ -38,14 +38,6 @@ const getDesktopCapturerSource = async () => {
     ...(await desktopCapturer.getSources({ types: ['window', 'screen'] })),
     ...(await selfWindows())
   ]
-}
-
-function getSize() {
-  const { size, scaleFactor } = screen.getPrimaryDisplay()
-  return {
-    width: size.width * scaleFactor,
-    height: size.height * scaleFactor
-  }
 }
 
 let cutWindow: BrowserWindow

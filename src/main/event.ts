@@ -1,26 +1,13 @@
 import { ipcMain, dialog, shell } from 'electron'
-const fs = require('fs').promises
+
 import Spider from './utils/spider/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
 import BrowserPool from './utils/browser/BrowserPool'
 import removeDir from './utils/removeDir'
 import { downloadBrowser, open } from './utils/browser/downloadBrowser'
-
-function checkDirectory(path) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      await fs.access(path)
-      resolve(true)
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
-        resolve(false)
-      } else {
-        reject(err)
-      }
-    }
-  })
-}
+import { startRecording, stopRecording } from './utils/screen/recording'
+import { checkDirectory, getSize } from './utils/utils'
 
 export default function addEventListener(mainWindow) {
   const operation = {
@@ -120,5 +107,17 @@ export default function addEventListener(mainWindow) {
 
   ipcMain.on('open_chromium', async () => {
     open()
+  })
+
+  ipcMain.on('startRecording', async (_, recordingConfig) => {
+    startRecording(recordingConfig)
+  })
+
+  ipcMain.on('stopRecording', async () => {
+    stopRecording()
+  })
+
+  ipcMain.handle('screen_size', async () => {
+    return getSize()
   })
 }
