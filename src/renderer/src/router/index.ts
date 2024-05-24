@@ -17,7 +17,11 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/screen'
+          redirect: '/main/home'
+        },
+        {
+          path: '/main/home',
+          component: () => import('../views/Main/Home/Home.vue')
         },
         {
           path: '/main/crawler',

@@ -1,5 +1,10 @@
 const menuList = [
   {
+    title: '主页',
+    path: '/main/home',
+    icon: 'HomeFilled'
+  },
+  {
     title: '爬虫',
     path: '/main/crawler',
     icon: 'CrawlerIcon'

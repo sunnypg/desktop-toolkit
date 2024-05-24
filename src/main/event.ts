@@ -8,6 +8,7 @@ import removeDir from './utils/removeDir'
 import { downloadBrowser, open } from './utils/browser/downloadBrowser'
 import { startRecording, stopRecording } from './utils/screen/recording'
 import { checkDirectory, getSize } from './utils/utils'
+import { getCpuInfo, getMemory, getSysDisk, getSysInfo } from './utils/system'
 
 export default function addEventListener(mainWindow) {
   const operation = {
@@ -119,5 +120,14 @@ export default function addEventListener(mainWindow) {
 
   ipcMain.handle('screen_size', async () => {
     return getSize()
+  })
+
+  ipcMain.handle('system_info', async () => {
+    return {
+      cpu: getCpuInfo(),
+      mem: getMemory(),
+      disk: getSysDisk(),
+      sys: getSysInfo()
+    }
   })
 }
