@@ -4,7 +4,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <h3>CPU</h3>
+            <h3><svg-icon iconName="icon-CPU"></svg-icon> CPU</h3>
           </template>
           <el-table :data="data.cpu" v-if="data.cpu">
             <el-table-column prop="property" label="属性" />
@@ -27,7 +27,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <h3>内存</h3>
+            <h3><svg-icon iconName="icon-neicun"></svg-icon> 内存</h3>
           </template>
           <el-table :data="data.mem" v-if="data.mem">
             <el-table-column prop="property" label="属性" />
@@ -50,7 +50,7 @@
       <el-col :span="24">
         <el-card>
           <template #header>
-            <h3>服务器信息</h3>
+            <h3><svg-icon iconName="icon--diannao"></svg-icon> 服务器信息</h3>
           </template>
           <el-descriptions :column="4" v-if="data.sys">
             <el-descriptions-item label="主机名">{{
@@ -66,7 +66,7 @@
       <el-col :span="24">
         <el-card>
           <template #header>
-            <h3>磁盘</h3>
+            <h3><svg-icon iconName="icon-cipan"></svg-icon> 磁盘</h3>
           </template>
           <el-table :data="data.disk" v-if="data.disk">
             <el-table-column label="盘符路径" width="120">

@@ -7,7 +7,8 @@ const menuList = [
   {
     title: '爬虫',
     path: '/main/crawler',
-    icon: 'CrawlerIcon'
+    iconType: 'custom',
+    iconName: 'icon-pachongrenwuzhuangtaijiankong'
   },
   {
     title: '指纹浏览器',

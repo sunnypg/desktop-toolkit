@@ -14,9 +14,9 @@
             @click="handleItemClick({ url: item.path, index: `${index}` })"
           >
             <el-icon>
-              <CrawlerIcon v-if="item.icon === 'CrawlerIcon'"></CrawlerIcon>
-              <Component :is="item.icon" v-else></Component
-            ></el-icon>
+              <svg-icon v-if="item.iconType === 'custom'" :iconName="item.iconName"></svg-icon>
+              <Component v-else :is="item.icon"></Component>
+            </el-icon>
             <template #title>{{ item.title }}</template>
           </el-menu-item>
         </template>
