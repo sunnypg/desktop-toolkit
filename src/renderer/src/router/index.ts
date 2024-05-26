@@ -17,11 +17,15 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/home'
+          redirect: '/main/weather'
         },
         {
           path: '/main/home',
           component: () => import('../views/Main/Home/Home.vue')
+        },
+        {
+          path: '/main/weather',
+          component: () => import('../views/Main/Weather/Weather.vue')
         },
         {
           path: '/main/crawler',

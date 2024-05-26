@@ -5,6 +5,12 @@ const menuList = [
     icon: 'HomeFilled'
   },
   {
+    title: '天气',
+    path: '/main/weather',
+    iconType: 'custom',
+    iconName: 'icon-tianqi'
+  },
+  {
     title: '爬虫',
     path: '/main/crawler',
     iconType: 'custom',

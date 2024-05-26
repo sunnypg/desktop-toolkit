@@ -1,5 +1,4 @@
 import { ipcMain, dialog, shell } from 'electron'
-
 import Spider from './utils/spider/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
@@ -9,6 +8,7 @@ import { downloadBrowser, open } from './utils/browser/downloadBrowser'
 import { startRecording, stopRecording } from './utils/screen/recording'
 import { checkDirectory, getSize } from './utils/utils'
 import { getCpuInfo, getMemory, getSysDisk, getSysInfo } from './utils/system'
+import pinyin from 'pinyin'
 
 export default function addEventListener(mainWindow) {
   const operation = {
@@ -129,5 +129,9 @@ export default function addEventListener(mainWindow) {
       disk: getSysDisk(),
       sys: getSysInfo()
     }
+  })
+
+  ipcMain.handle('pinyin', async (_, text) => {
+    return pinyin(text, { style: pinyin.STYLE_NORMAL }).join('')
   })
 }
