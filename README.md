@@ -1,6 +1,6 @@
-# crawler-puppeteer
+# desktop-toolkit
 
-An Electron application with Vue and TypeScript
+An Desktop tool with Electron
 
 ## Recommended IDE Setup
 

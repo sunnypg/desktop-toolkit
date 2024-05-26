@@ -1,10 +1,10 @@
 {
-  "name": "crawler-puppeteer",
+  "name": "desktop-toolkit",
   "version": "1.0.0",
-  "description": "An Electron application with Vue and TypeScript",
+  "description": "An Desktop tool with Electron",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "sunnypg",
+  "homepage": "https://github.com/sunnypg/desktop-toolkit",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",

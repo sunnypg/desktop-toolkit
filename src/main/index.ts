@@ -11,7 +11,7 @@ function createWindow(): void {
     height: 800,
     show: false,
     frame: false,
-    icon: join(__dirname, '../../resources/logo.jpg'),
+    icon: join(__dirname, '../../resources/logo.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

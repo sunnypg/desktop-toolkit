@@ -1,6 +1,6 @@
 <template>
   <div class="main-menu">
-    <img class="logo" src="../../assets/images/logo.jpg" alt="" />
+    <img class="logo" src="../../assets/images/logo.png" alt="" />
     <div class="menu">
       <el-menu
         :default-active="defaultActive"
@@ -63,8 +63,8 @@ function handleItemClick(item: any) {
   justify-content: flex-start;
 
   .logo {
-    width: 40px;
-    margin-left: 8px;
+    width: 35px;
+    margin: 5px 0 0 9px;
   }
 
   .info {

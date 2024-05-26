@@ -3,8 +3,8 @@ import { join } from 'path'
 import { screenshot } from './utils/screen/screenshot'
 
 export default function createTray(win) {
-  const tray = new Tray(join(__dirname, '../../resources/logo.jpg'))
-  tray.setToolTip('爬虫大师')
+  const tray = new Tray(join(__dirname, '../../resources/logo.png'))
+  tray.setToolTip('桌面工具箱')
   tray.on('click', () => {
     win.isVisible() ? win.hide() : win.show()
   })
