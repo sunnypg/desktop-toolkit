@@ -7,5 +7,28 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  },
+  // 设置npm包管理器为npm
+  "npm.packageManager":"npm",
+  // 设置编辑器的Tab大小为2个空格
+  "editor.tabSize":2,
+  // 配置编辑器在每次保存时自动格式化代码
+  "editor.formatOnSave":true,
+  // 设置默认的代码格式化工具为prettier
+  "editor.defaultFormatter":"esbenp.prettier-vscode",
+  // 配置编辑器在保存时执行的代码动作，包括应用所有明确的修复
+  "editor.codeActionsOnSave": {
+  "source.fixAll":"explicit",
+  "source.fixAll.eslint":"explicit",
+  "source.fixAll.stylelint":"explicit"
+  },
+  // 自定义拼写检查词典，包含一些特定的技术词汇
+  "cSpell.words": [
+  "lint-staged",
+  "lintstagedrc",
+  "persistedstate",
+  "pinia",
+  "npm",
+  "stylelint",
+  ],
 }

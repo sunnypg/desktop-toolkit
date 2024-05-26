@@ -18,7 +18,10 @@
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "rm -rf ./node_modules && npm run build && electron-builder --win --config",
     "build:mac": "rm -rf ./node_modules && npm run build && electron-builder --mac --config",
-    "build:linux": "rm -rf ./node_modules && npm run build && electron-builder --linux --config"
+    "build:linux": "rm -rf ./node_modules && npm run build && electron-builder --linux --config",
+    "prepare": "husky install",
+    "lint:lint-staged": "lint-staged",
+    "commit": "git pull && git add -A && git-cz && git push"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
@@ -40,6 +43,8 @@
     "winston": "^3.13.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
     "@electron-toolkit/eslint-config": "^1.0.2",
     "@electron-toolkit/eslint-config-ts": "^1.0.1",
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -50,12 +55,16 @@
     "@vitejs/plugin-vue": "^5.0.3",
     "@vue/eslint-config-prettier": "^9.0.0",
     "@vue/eslint-config-typescript": "^12.0.0",
+    "commitizen": "^4.3.0",
+    "cz-git": "^1.9.1",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.20.1",
+    "husky": "^9.0.11",
     "less": "^4.2.0",
+    "lint-staged": "^15.2.5",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
     "unplugin-auto-import": "^0.17.6",
@@ -64,5 +73,13 @@
     "vite": "^5.0.12",
     "vue": "^3.4.15",
     "vue-tsc": "^1.8.27"
+  },
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-git"
+    }
+  },
+  "lint-staged": {
+    "*.{vue,js,ts,jsx,tsx,md,json}": "eslint --fix"
   }
 }

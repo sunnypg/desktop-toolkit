@@ -4,3 +4,15 @@ pnpm-lock.yaml
 LICENSE.md
 tsconfig.json
 tsconfig.*.json
+
+.prettierrc.yaml
+.editorconfig
+.eslintignore
+.gitignore
+.npmrc
+README.md
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.husky/*
