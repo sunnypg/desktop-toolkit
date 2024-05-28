@@ -1,6 +1,7 @@
 <template>
   <div class="app">
     <el-config-provider :locale="zhCn">
+      <MainController></MainController>
       <router-view></router-view>
     </el-config-provider>
   </div>

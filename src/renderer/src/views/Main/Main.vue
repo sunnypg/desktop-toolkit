@@ -5,9 +5,7 @@
         <MainMenu />
       </el-aside>
       <el-container>
-        <el-header height="35px">
-          <MainController />
-        </el-header>
+        <el-header height="35px"> </el-header>
         <el-main>
           <router-view></router-view>
         </el-main>

@@ -1,3 +1,4 @@
+import { myLocalStorage } from '@renderer/utils/storage'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -17,7 +18,7 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/weather'
+          redirect: '/main/home'
         },
         {
           path: '/main/home',
@@ -53,6 +54,13 @@ const router = createRouter({
 })
 
 // 导航守卫
-router.beforeEach((to, from) => {})
+router.beforeEach((to, _form, next) => {
+  const token = myLocalStorage.getStorage('token')
+  if (to.path.startsWith('/main') && !token) {
+    next('/login')
+  } else {
+    next()
+  }
+})
 
 export default router

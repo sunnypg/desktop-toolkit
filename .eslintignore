@@ -25,3 +25,4 @@ out
 *.sw?
 
 README.md
+src/renderer/src/assets/iconfont/iconfont.js
