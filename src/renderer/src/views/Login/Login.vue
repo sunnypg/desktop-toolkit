@@ -10,13 +10,22 @@
             :model="loginForm"
             :rules="loginFormRules"
             :show-message="false"
+            @keyup.enter="login"
+            @validate="
+              (prop: FormItemProp, isValid: boolean, message: string) =>
+                validateTriggerHandler(prop, isValid, message, loginFormValidInfo)
+            "
           >
             <el-form-item prop="username">
-              <el-input v-model="loginForm.username" placeholder="Username or Email">
+              <el-input v-model="loginForm.username" placeholder="Username or Email or Phone">
                 <template #prefix>
                   <el-icon size="30" class="input-icon"><Avatar /></el-icon>
                 </template>
               </el-input>
+              <div v-if="loginFormValidInfo.username" class="error-info">
+                <SvgIcon icon-name="icon-error" class="error-icon"></SvgIcon>
+                <span class="error-text">{{ loginFormValidInfo.username }}</span>
+              </div>
             </el-form-item>
             <el-form-item prop="password">
               <el-input
@@ -29,6 +38,10 @@
                   <el-icon size="30" class="input-icon"><Lock /></el-icon>
                 </template>
               </el-input>
+              <div v-if="loginFormValidInfo.password" class="error-info">
+                <SvgIcon icon-name="icon-error" class="error-icon"></SvgIcon>
+                <span class="error-text">{{ loginFormValidInfo.password }}</span>
+              </div>
             </el-form-item>
           </el-form>
           <el-button type="primary" class="btn" @click="login">登录</el-button>
@@ -56,6 +69,11 @@
             :model="registerForm"
             :rules="registerFormRules"
             :show-message="false"
+            @keyup.enter="register"
+            @validate="
+              (prop: FormItemProp, isValid: boolean, message: string) =>
+                validateTriggerHandler(prop, isValid, message, registerFormValidInfo)
+            "
           >
             <el-form-item prop="username">
               <el-input v-model="registerForm.username" placeholder="Username">
@@ -63,6 +81,10 @@
                   <el-icon size="30" class="input-icon"><Avatar /></el-icon>
                 </template>
               </el-input>
+              <div v-if="registerFormValidInfo.username" class="error-info">
+                <SvgIcon icon-name="icon-error" class="error-icon"></SvgIcon>
+                <span class="error-text">{{ registerFormValidInfo.username }}</span>
+              </div>
             </el-form-item>
             <el-form-item prop="email">
               <el-input v-model="registerForm.email" placeholder="Email">
@@ -70,6 +92,10 @@
                   <el-icon size="30" class="input-icon"><Message /></el-icon>
                 </template>
               </el-input>
+              <div v-if="registerFormValidInfo.email" class="error-info">
+                <SvgIcon icon-name="icon-error" class="error-icon"></SvgIcon>
+                <span class="error-text">{{ registerFormValidInfo.email }}</span>
+              </div>
             </el-form-item>
             <el-form-item prop="password">
               <el-input
@@ -82,6 +108,10 @@
                   <el-icon size="30" class="input-icon"><Lock /></el-icon>
                 </template>
               </el-input>
+              <div v-if="registerFormValidInfo.password" class="error-info">
+                <SvgIcon icon-name="icon-error" class="error-icon"></SvgIcon>
+                <span class="error-text">{{ registerFormValidInfo.password }}</span>
+              </div>
             </el-form-item>
           </el-form>
           <el-button type="primary" class="btn" @click="register">注册</el-button>
@@ -127,7 +157,7 @@
 <script setup lang="ts">
 import router from '@renderer/router'
 import { myLocalStorage } from '@renderer/utils/storage'
-import { FormInstance } from 'element-plus'
+import { FormInstance, FormItemProp } from 'element-plus'
 const isRegister = ref(false)
 
 const loginFormRef = ref<FormInstance>()
@@ -135,7 +165,10 @@ const loginForm = ref({
   username: '',
   password: ''
 })
-
+const loginFormValidInfo = ref({
+  username: '',
+  password: ''
+})
 const loginFormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
@@ -148,7 +181,8 @@ const login = async () => {
       const userInfo = myLocalStorage.getStorage('userInfo') || {}
       if (
         (loginForm.value.username !== userInfo.username &&
-          loginForm.value.username !== userInfo.email) ||
+          loginForm.value.username !== userInfo.email &&
+          loginForm.value.username !== userInfo.phone) ||
         loginForm.value.password !== userInfo.password
       ) {
         ElMessage.error('用户名或密码错误')
@@ -167,6 +201,12 @@ const login = async () => {
 const registerFormRef = ref<FormInstance>()
 const registerForm = ref({
   username: '',
+  nickname: '',
+  email: '',
+  password: ''
+})
+const registerFormValidInfo = ref({
+  username: '',
   email: '',
   password: ''
 })
@@ -174,15 +214,17 @@ const registerForm = ref({
 const checkEmail = (_rule: any, _value: any, callback: any) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
   if (registerForm.value.email !== '' && !emailRegex.test(registerForm.value.email)) {
-    callback(new Error('请输入正确格式的邮箱'))
+    return callback(new Error('请输入正确格式的邮箱'))
   }
+  callback()
 }
 
 const checkPassword = (_rule: any, _value: any, callback: any) => {
   const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-  if (registerForm.value.email !== '' && !regex.test(registerForm.value.password)) {
-    callback(new Error('密码必须包含a-z/A-Z/0-9/@$!%*?&且最少8位'))
+  if (registerForm.value.password !== '' && !regex.test(registerForm.value.password)) {
+    return callback(new Error('密码必须包含大小写字母、数字、@$!%*?&且最少8位'))
   }
+  callback()
 }
 
 const registerFormRules = {
@@ -203,12 +245,27 @@ const register = async () => {
   if (!registerFormRef.value) return
   await registerFormRef.value.validate((valid, fields) => {
     if (valid) {
+      registerForm.value.nickname = `用户${crypto.randomUUID()}`
       myLocalStorage.setStorage('userInfo', registerForm.value)
       ElMessage.success('注册成功')
     } else {
       console.log('error submit!', fields)
     }
   })
+}
+
+const validateTriggerHandler = (
+  prop: FormItemProp,
+  isValid: boolean,
+  message: string,
+  formCheckField: any
+) => {
+  prop = prop as string
+  if (!isValid) {
+    formCheckField[prop] = message
+  } else {
+    formCheckField[prop] = ''
+  }
 }
 </script>
 
@@ -275,6 +332,22 @@ const register = async () => {
   margin-bottom: 10px;
 }
 
+.error-info {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 58px;
+  .error-icon {
+    font-size: 24px;
+    margin: 0 10px 0 25px;
+  }
+  .error-text {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-size: 12px;
+    color: #a8abb2;
+  }
+}
+
 .el-form {
   max-width: 380px;
   min-width: 240px;
@@ -287,7 +360,7 @@ const register = async () => {
   box-shadow: none;
   border-radius: 50px;
   margin-top: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 :deep(.el-form-item.is-error .el-input__wrapper) {

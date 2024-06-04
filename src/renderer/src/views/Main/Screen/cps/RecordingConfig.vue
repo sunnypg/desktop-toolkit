@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { myLocalStorage } from '@renderer/utils/storage'
 import type { FormInstance } from 'element-plus'
 import { ref } from 'vue'
 
@@ -89,16 +90,15 @@ const show = () => {
 }
 
 const ruleFormRef = ref<FormInstance>()
-const form = ref<any>(
-  localStorage.getItem('recordingConfig')
-    ? JSON.parse(localStorage.getItem('recordingConfig') as string)
-    : {
-        definition: null,
-        fps: null,
-        type: null,
-        saveDir: null
-      }
-)
+interface IFrom {
+  definition: number
+  fps: string
+  type: string
+  saveDir: string
+}
+const form = ref<IFrom>(myLocalStorage.getStorage('recordingConfig') || {})
+console.log(form.value)
+
 const rules = {
   definition: [{ required: true, message: '请选择分辨率', trigger: 'change' }],
   fps: [{ required: true, message: '请选择帧率', trigger: 'change' }],

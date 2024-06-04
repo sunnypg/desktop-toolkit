@@ -41,6 +41,10 @@ const router = createRouter({
           component: () => import('../views/Main/Screen/Screen.vue')
         },
         {
+          path: '/main/personal',
+          component: () => import('../views/Main/Personal/Personal.vue')
+        },
+        {
           path: '/main/setting',
           component: () => import('../views/Main/Setting/Setting.vue')
         }

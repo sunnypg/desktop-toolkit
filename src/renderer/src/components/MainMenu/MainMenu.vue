@@ -14,31 +14,20 @@
             @click="handleItemClick({ url: item.path, index: `${index}` })"
           >
             <el-icon>
-              <svg-icon v-if="item.iconType === 'custom'" :iconName="item.iconName"></svg-icon>
-              <Component v-else :is="item.icon"></Component>
+              <svg-icon v-if="item.iconType === 'custom'" :icon-name="item.iconName"></svg-icon>
+              <Component :is="item.icon" v-else></Component>
             </el-icon>
             <template #title>{{ item.title }}</template>
           </el-menu-item>
         </template>
       </el-menu>
     </div>
-    <div class="info">
-      <el-dropdown>
-        <el-avatar class="avatar" :size="30" :src="avatar" />
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item>
-              <el-icon><CircleCloseFilled /></el-icon>
-              退出系统
-            </el-dropdown-item>
-            <el-dropdown-item>
-              <el-icon><InfoFilled /></el-icon>
-              个人信息
-            </el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
-    </div>
+    <el-avatar
+      class="avatar"
+      :size="30"
+      :src="avatar"
+      @click="() => router.push('/main/personal')"
+    />
   </div>
 </template>
 
@@ -67,16 +56,11 @@ function handleItemClick(item: any) {
     margin: 5px 0 0 9px;
   }
 
-  .info {
-    line-height: normal;
+  .avatar {
     position: fixed;
-    bottom: 20px;
-    left: 6px;
-
-    .avatar {
-      margin-left: 6px;
-      cursor: pointer;
-    }
+    bottom: 15px;
+    left: 12px;
+    cursor: pointer;
   }
 }
 </style>
