@@ -16,9 +16,9 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "rm -rf ./node_modules && npm run build && electron-builder --win --config",
-    "build:mac": "rm -rf ./node_modules && npm run build && electron-builder --mac --config",
-    "build:linux": "rm -rf ./node_modules && npm run build && electron-builder --linux --config",
+    "build:win": " npm run build && electron-builder --win --config",
+    "build:mac": "npm run build && electron-builder --mac --config",
+    "build:linux": "npm run build && electron-builder --linux --config",
     "prepare": "husky install",
     "lint:lint-staged": "lint-staged",
     "commit": "git pull && git add -A && git-cz && git push"

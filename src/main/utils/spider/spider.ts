@@ -86,9 +86,11 @@ async function getResource(page: any) {
     const stylesheets = Array.from(document.styleSheets)
     const cssRules = stylesheets.reduce((acc: any[], sheet) => {
       try {
-        const rules = sheet.cssRules || []
+        const rules = Array.from(sheet.cssRules) || []
         acc.push(...rules)
-      } catch (e) {}
+      } catch (e) {
+        console.log(e)
+      }
       return acc
     }, [])
     // 遍历CSS规则，查找背景图片Url
@@ -257,7 +259,7 @@ class Site {
         total = this.allImg.length + this.allBg.length
         type_progress = `${this.url}_img`
       }
-      let progress = Math.round((current / total) * 100)
+      const progress = Math.round((current / total) * 100)
       return {
         status: res.status,
         message: res.message,
@@ -275,7 +277,7 @@ class Site {
     this.download(type)
   }
 
-  private dispatch(name: string, arg?: string | object | Function) {
+  private dispatch(name: string, arg?: string | object) {
     if (this.eventMap.has(name)) {
       if (typeof arg === 'function') arg = arg()
       this.eventMap.get(name)!.forEach((event) => event(arg))
@@ -345,7 +347,7 @@ export default class Spider {
 
   async init() {
     const browser = await puppeteer.launch({
-      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
       headless: this.headless
     })
 
@@ -402,7 +404,7 @@ export default class Spider {
     }
   }
 
-  private dispatch(name: string, arg: string | object | Function) {
+  private dispatch(name: string, arg: string | object) {
     if (this.eventMap.has(name)) {
       if (typeof arg === 'function') arg = arg()
       this.eventMap.get(name)!.forEach((event) => event(arg))

@@ -93,7 +93,7 @@ export default class BrowserPool {
     }
   }
 
-  private dispatch(name: string, arg: string | object | Function) {
+  private dispatch(name: string, arg: string | object) {
     if (this.eventMap.has(name)) {
       if (typeof arg === 'function') arg = arg()
       this.eventMap.get(name)!.forEach((event) => event(arg))
