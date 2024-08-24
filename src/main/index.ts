@@ -65,8 +65,10 @@ function createWindow(): void {
       role: 'close'
     }
   ])
-  mainWindow.webContents.on('context-menu', () => {
-    contextMenu.popup()
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    if (!params.pageURL.includes('main/control')) {
+      contextMenu.popup()
+    }
   })
 
   // 避免启动多个app

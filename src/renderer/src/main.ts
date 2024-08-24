@@ -1,4 +1,5 @@
 import 'normalize.css'
+import 'element-plus/dist/index.css'
 import './assets/css/index.less'
 import { createApp } from 'vue'
 import App from './App.vue'

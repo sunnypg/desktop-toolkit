@@ -1,8 +1,8 @@
 import { myLocalStorage } from '@renderer/utils/storage'
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
@@ -18,7 +18,7 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/home'
+          redirect: '/main/control'
         },
         {
           path: '/main/home',
@@ -45,8 +45,8 @@ const router = createRouter({
           component: () => import('../views/Main/Personal/Personal.vue')
         },
         {
-          path: '/main/setting',
-          component: () => import('../views/Main/Setting/Setting.vue')
+          path: '/main/control',
+          component: () => import('../views/Main/Control/Control.vue')
         }
       ]
     },

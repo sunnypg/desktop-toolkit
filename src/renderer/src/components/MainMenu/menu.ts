@@ -27,9 +27,9 @@ const menuList = [
     icon: 'Monitor'
   },
   {
-    title: '设置',
-    path: '/main/setting',
-    icon: 'Setting'
+    title: '远程控制',
+    path: '/main/control',
+    icon: 'Connection'
   }
 ]
 

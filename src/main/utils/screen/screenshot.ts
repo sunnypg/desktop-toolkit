@@ -1,44 +1,7 @@
-import {
-  BrowserWindow,
-  ipcMain,
-  desktopCapturer,
-  webContents,
-  clipboard,
-  nativeImage,
-  globalShortcut
-} from 'electron'
+import { BrowserWindow, ipcMain, clipboard, nativeImage, globalShortcut } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import { getSize } from '../utils'
-
-const selfWindows = async () =>
-  await Promise.all(
-    webContents
-      .getAllWebContents()
-      .filter((item) => {
-        const win = BrowserWindow.fromWebContents(item)
-        return win && win.isVisible()
-      })
-      .map(async (item) => {
-        const win = BrowserWindow.fromWebContents(item)
-        const thumbnail = await win?.capturePage()
-        // 当程序窗口打开DevTool的时候  也会计入
-        return {
-          name: win?.getTitle() + (item.devToolsWebContents === null ? '' : '-dev'), // 给dev窗口加上后缀
-          id: win?.getMediaSourceId(),
-          thumbnail,
-          display_id: '',
-          appIcon: null
-        }
-      })
-  )
-
-const getDesktopCapturerSource = async () => {
-  return [
-    ...(await desktopCapturer.getSources({ types: ['window', 'screen'] })),
-    ...(await selfWindows())
-  ]
-}
 
 let cutWindow: BrowserWindow
 export default function createCutWindow() {
@@ -71,27 +34,22 @@ export default function createCutWindow() {
   })
 }
 
-let sources: any = null
 ipcMain.on('screenshot', async () => {
   screenshot()
 })
 
 export async function screenshot() {
-  sources = await getDesktopCapturerSource()
+  const routerPath = '#/cut'
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    let url = process.env['ELECTRON_RENDERER_URL'] + '/cut'
+    let url = process.env['ELECTRON_RENDERER_URL'] + routerPath
     cutWindow.loadURL(url)
   } else {
-    cutWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    cutWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: routerPath })
   }
   cutWindow.show()
   cutWindow.maximize()
   cutWindow.setFullScreen(true)
 }
-
-ipcMain.handle('screenshot-sources', () => {
-  return sources
-})
 
 ipcMain.on('screenshot-callback', (_, data) => {
   data = JSON.parse(data)
@@ -100,6 +58,7 @@ ipcMain.on('screenshot-callback', (_, data) => {
   } else if (data.action === 'complete') {
     const imageData = nativeImage.createFromDataURL(data.info.base64)
     clipboard.writeImage(imageData)
+    console.log('截图成功')
   } else if (data.action === 'close') {
     console.log('关闭截图')
   }

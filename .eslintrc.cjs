@@ -24,6 +24,7 @@ module.exports = {
     '@typescript-eslint/no-var-requires': 'off',
     'no-async-promise-executor': 'off',
     'vue/valid-v-for': 0,
-    'prefer-const': 'off'
+    'prefer-const': 'off',
+    '@typescript-eslint/ban-ts-comment': 'off'
   }
 }

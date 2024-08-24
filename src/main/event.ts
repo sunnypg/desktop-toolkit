@@ -1,32 +1,41 @@
-import { ipcMain, dialog, shell } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
 import Spider from './utils/spider/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
 import BrowserPool from './utils/browser/BrowserPool'
 import removeDir from './utils/removeDir'
-import { downloadBrowser, open } from './utils/browser/downloadBrowser'
 import { startRecording, stopRecording } from './utils/screen/recording'
 import { checkDirectory, getSize } from './utils/utils'
 import { getCpuInfo, getMemory, getSysDisk, getSysInfo } from './utils/system'
 import pinyin from 'pinyin'
+import { join } from 'path'
+import { is } from '@electron-toolkit/utils'
+import getDesktopCapturerSource from './utils/screen/screen'
+import { Button, keyboard, mouse, Point } from '@scanood/nut-js'
+import { keymap } from './utils/control/keymap'
 
 export default function addEventListener(mainWindow) {
   const operation = {
     minimize: () => {
-      mainWindow.focus()
-      mainWindow.minimize()
+      const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+      activeWindow.focus()
+      activeWindow.minimize()
     },
     maximize: () => {
-      mainWindow.maximize()
+      const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+      activeWindow.maximize()
     },
     restore: () => {
-      mainWindow.restore()
+      const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+      activeWindow.restore()
     },
     close: () => {
-      mainWindow.close()
+      const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+      activeWindow.close()
     },
     reload: () => {
-      mainWindow.reload()
+      const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+      activeWindow.reload()
     }
   }
   ipcMain.on('resize', (_, type) => {
@@ -102,12 +111,8 @@ export default function addEventListener(mainWindow) {
     await removeDir(url)
   })
 
-  ipcMain.on('download', async () => {
-    downloadBrowser()
-  })
-
-  ipcMain.on('open_chromium', async () => {
-    open()
+  ipcMain.handle('screen-sources', async () => {
+    return await getDesktopCapturerSource()
   })
 
   ipcMain.on('startRecording', async (_, recordingConfig) => {
@@ -133,5 +138,70 @@ export default function addEventListener(mainWindow) {
 
   ipcMain.handle('pinyin', async (_, text) => {
     return pinyin(text, { style: pinyin.STYLE_NORMAL }).join('')
+  })
+
+  ipcMain.handle('open-remote', async () => {
+    const remoteWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      show: false,
+      frame: false,
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    })
+    const routerPath = '#/main/control'
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      let url = process.env['ELECTRON_RENDERER_URL'] + routerPath
+      remoteWindow.loadURL(url)
+    } else {
+      remoteWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: routerPath })
+    }
+    remoteWindow.show()
+  })
+
+  keyboard.config.autoDelayMs = 5
+  ipcMain.on('keyboard-event', async (_event, { type, code }) => {
+    const key = keymap.get(code)
+    if (!key) return
+    switch (type) {
+      case 'keydown':
+        keyboard.pressKey(key)
+        break
+      case 'keyup':
+        keyboard.releaseKey(key)
+        break
+    }
+  })
+
+  ipcMain.on('mouse-move', async (_event, data) => {
+    const { width, height } = getSize()
+    const W = width / data.width
+    const H = height / data.height
+    const realX = data.x * W
+    const realY = data.y * H
+    const point = new Point(realX, realY)
+    await mouse.move([point])
+  })
+
+  ipcMain.on('mouse-event', async (_event, data) => {
+    const buttonMap = {
+      0: Button.LEFT,
+      1: Button.MIDDLE,
+      2: Button.RIGHT
+    }
+    if (data.type === 'mousedown') {
+      mouse.pressButton(buttonMap[data.button])
+    } else if (data.type === 'mouseup') {
+      mouse.releaseButton(buttonMap[data.button])
+    } else if (data.type === 'mousewheel') {
+      if (data.deltaY > 0) {
+        mouse.scrollDown(data.deltaY)
+      } else if (data.deltaY < 0) {
+        mouse.scrollUp(Math.abs(data.deltaY))
+      }
+    }
   })
 }

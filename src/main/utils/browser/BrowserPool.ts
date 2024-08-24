@@ -1,6 +1,5 @@
 const puppeteer = require('puppeteer')
 import { IBrowser } from '../../../types/browser.type'
-import fakeFingerPrint from './fakeFingerPrint'
 import setBookmarks from './setBookmarks'
 
 export default class BrowserPool {
@@ -62,9 +61,7 @@ export default class BrowserPool {
         })
         await fristPage.goto('chrome://bookmarks/')
         await setBookmarks(fristPage, options.bookmarks)
-        fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' }).then(() => {
-          fakeFingerPrint(fristPage)
-        })
+        fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' }).then(() => {})
         fristPage.setViewport({ width: windowSize.width, height: windowSize.height })
 
         options.urls.forEach(async (url) => {
