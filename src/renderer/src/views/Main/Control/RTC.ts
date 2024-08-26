@@ -4,19 +4,18 @@ import { Ref } from 'vue'
 export async function createVideoRTC(
   socket: Socket,
   remoteForm: Ref<{
-    type: number
-    localUUID: string
-    remoteUUID: string
+    localID: string
+    remoteID: string
   }>
-) {
-  const peer: any = new RTCPeerConnection()
+): Promise<RTCPeerConnection> {
+  const peer: RTCPeerConnection = new RTCPeerConnection()
   peer.onicecandidate = ({ candidate }) => {
     if (candidate) {
       console.log('获取到candidate信息', candidate)
       // 通过信令服务器发送candidate信息给对方用户
       socket.emit('candidate', {
-        from: remoteForm.value.localUUID,
-        to: remoteForm.value.remoteUUID,
+        from: remoteForm.value.localID,
+        to: remoteForm.value.remoteID,
         candidate: candidate
       })
     }

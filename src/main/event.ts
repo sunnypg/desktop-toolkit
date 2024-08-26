@@ -13,6 +13,8 @@ import { is } from '@electron-toolkit/utils'
 import getDesktopCapturerSource from './utils/screen/screen'
 import { Button, keyboard, mouse, Point } from '@scanood/nut-js'
 import { keymap } from './utils/control/keymap'
+import os from 'os'
+import crypto from 'crypto'
 
 export default function addEventListener(mainWindow) {
   const operation = {
@@ -136,6 +138,20 @@ export default function addEventListener(mainWindow) {
     }
   })
 
+  ipcMain.handle('system_id', async () => {
+    const networkInterfaces = await os.networkInterfaces()
+    const nets = Object.values(networkInterfaces).flat(2)
+    const MAC = nets.find((item) => !item?.internal && item?.mac !== '00:00:00:00:00:00')?.mac
+    const hashMAC = MAC ? crypto.createHash('sha256').update(MAC).digest('hex') : ''
+    const intHash = BigInt('0x' + hashMAC)
+      .toString()
+      .substring(0, 9)
+    return {
+      system_id: intHash,
+      code: intHash
+    }
+  })
+
   ipcMain.handle('pinyin', async (_, text) => {
     return pinyin(text, { style: pinyin.STYLE_NORMAL }).join('')
   })
@@ -176,6 +192,7 @@ export default function addEventListener(mainWindow) {
     }
   })
 
+  mouse.config.autoDelayMs = 5
   ipcMain.on('mouse-move', async (_event, data) => {
     const { width, height } = getSize()
     const W = width / data.width
@@ -192,6 +209,7 @@ export default function addEventListener(mainWindow) {
       1: Button.MIDDLE,
       2: Button.RIGHT
     }
+
     if (data.type === 'mousedown') {
       mouse.pressButton(buttonMap[data.button])
     } else if (data.type === 'mouseup') {
