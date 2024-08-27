@@ -3,7 +3,7 @@
     <el-card style="height: calc(100vh - 80px)">
       <el-row>
         <el-col :span="6">
-          <div class="card" ref="cardRef1">
+          <div ref="cardRef1" class="card">
             <div class="header">
               <h3>截屏</h3>
               <span class="more">
@@ -16,7 +16,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="card" ref="cardRef2">
+          <div ref="cardRef2" class="card">
             <div class="header" @click="recordingConfig">
               <h3>录屏</h3>
               <span class="more">
@@ -34,7 +34,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="card" ref="cardRef3">
+          <div ref="cardRef3" class="card">
             <div class="header">
               <h3>录像</h3>
               <span class="more">
@@ -47,7 +47,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="card" ref="cardRef4">
+          <div ref="cardRef4" class="card">
             <div class="header">
               <h3>录音</h3>
               <span class="more">
@@ -68,6 +68,7 @@
 <script setup lang="ts">
 import { useLightCard } from '@renderer/hooks/use-light-card'
 import RecordingConfig from './cps/RecordingConfig.vue'
+import { ElNotification, ElTag, NotificationHandle } from 'element-plus'
 
 const { cardRef: cardRef1 } = useLightCard()
 const { cardRef: cardRef2 } = useLightCard({
@@ -98,6 +99,9 @@ const confirm = (value) => {
 const recordingConfig = async () => {
   recordingConfigRef.value.show()
 }
+
+const isRecording = ref(false)
+const notification = ref<NotificationHandle | null>(null)
 const startRecording = async () => {
   let recordingConfig = localStorage.getItem('recordingConfig')
   if (!recordingConfig) {
@@ -110,9 +114,57 @@ const startRecording = async () => {
   recordingConfig = JSON.parse(recordingConfig)
   window.electron.ipcRenderer.send('startRecording', recordingConfig)
 }
+window.electron.ipcRenderer.on('recording', (_, data) => {
+  isRecording.value = true
+  if (!notification.value) {
+    notification.value = ElNotification({
+      title: '开始录屏',
+      type: 'info',
+      message: h('div', { style: 'color: teal' }, '正在录制中...'),
+      showClose: false,
+      duration: 0,
+      position: 'bottom-right'
+    })
+  }
 
+  console.log(data)
+})
 const stopRecording = async () => {
   window.electron.ipcRenderer.send('stopRecording')
+}
+window.electron.ipcRenderer.on('recording-exit', () => {
+  isRecording.value = false
+  if (notification.value) {
+    notification.value.close()
+    notification.value = null
+  }
+  let recordingConfig = JSON.parse(localStorage.getItem('recordingConfig')!)
+  ElNotification({
+    title: '录制完成',
+    type: 'success',
+    message: h('div', { style: 'width:100%;' }, [
+      h('span', { style: 'color: teal; margin-left: -30px;' }, '录制完成，请打开保存目录查看'),
+      h(
+        ElTag,
+        {
+          type: 'success',
+          style: 'width: 290px; margin-left: -30px; overflow: hidden; cursor: pointer;',
+          onClick: () => openSavePath(recordingConfig.saveDir)
+        },
+        `${recordingConfig.saveDir}`
+      )
+    ]),
+    duration: 0,
+    position: 'bottom-right'
+  })
+})
+
+const openSavePath = async (path) => {
+  const res = await window.electron.ipcRenderer.invoke('open-dir', path)
+  ElMessage({
+    message: res.message,
+    type: res.isExist ? 'success' : 'error'
+  })
 }
 
 const video = async () => {}

@@ -6,25 +6,46 @@
         <div class="local-code">
           <div class="code-name">本机设备识别码</div>
           <div>
-            <span class="code">{{ remoteForm.localID }}</span>
+            <span class="code">{{
+              `${remoteForm.localID.substring(0, 3)} ${remoteForm.localID.substring(3, 6)} ${remoteForm.localID.substring(6, 9)}`
+            }}</span>
             <el-icon class="copy-btn" @click="copy(remoteForm.localID)"><CopyDocument /></el-icon>
           </div>
         </div>
         <div class="local-code">
           <div class="code-name">长期验证码</div>
           <div>
-            <span class="code">{{ remoteForm.code }}</span>
-            <el-icon class="copy-btn" @click="copy(remoteForm.localID)"><CopyDocument /></el-icon>
+            <span class="code">{{ remoteForm.localCode }}</span>
+            <el-icon class="copy-btn" @click="copy(remoteForm.localCode)"><CopyDocument /></el-icon>
           </div>
         </div>
       </div>
       <div class="title">远程控制设备</div>
       <el-form ref="remoteFormRef" class="remote" :data="remoteForm">
         <el-form-item prop="remoteID">
-          <el-input v-model="remoteForm.remoteID" style="max-width: 600px" />
+          <el-input
+            v-model="remoteForm.remoteID"
+            placeholder="请输入伙伴识别码"
+            clearable
+            style="width: 60%"
+            class="remote-input"
+          >
+            <template #append>
+              <el-input
+                v-model="remoteForm.remoteCode"
+                type="password"
+                show-password
+                clearable
+                placeholder="验证码（可为空）"
+                style="width: 150px"
+              />
+            </template>
+          </el-input>
+
           <el-button
             v-if="deviceStatus !== DeviceStatus.PUPPETEER"
             style="margin-left: 10px"
+            :disabled="!remoteForm.remoteID"
             type="primary"
             @click="requestRemote"
             >连接</el-button
@@ -69,15 +90,16 @@ const deviceStatus = ref(DeviceStatus.FREE)
 const remoteFormRef = ref<FormInstance>()
 const remoteForm = ref({
   localID: '',
-  code: crypto.randomUUID(),
-  remoteID: ''
+  localCode: '',
+  remoteID: '',
+  remoteCode: ''
 })
 
 let peer: RTCPeerConnection
 let socket: Socket
-window.electron.ipcRenderer.invoke('system_id').then(({ system_id, code }) => {
+window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
   remoteForm.value.localID = system_id
-  remoteForm.value.code = code
+  remoteForm.value.localCode = code
 
   socket = io('http://10.2.0.36:3000')
   socket.on('connect', async () => {
@@ -86,7 +108,8 @@ window.electron.ipcRenderer.invoke('system_id').then(({ system_id, code }) => {
     socket.emit('create', remoteForm.value.localID)
 
     // 收到对方请求
-    socket.on('request', (uuid) => {
+    socket.on('request', ({ id, code }) => {
+      // 检测是否正在连接中
       if (deviceStatus.value !== DeviceStatus.FREE) {
         socket.emit('reply', {
           from: remoteForm.value.localID,
@@ -95,9 +118,21 @@ window.electron.ipcRenderer.invoke('system_id').then(({ system_id, code }) => {
         })
         return
       }
+
+      // 检测验证码是否正确
+      if (code === remoteForm.value.localCode) {
+        deviceStatus.value = DeviceStatus.PUPPETEER
+        socket.emit('reply', {
+          from: remoteForm.value.localID,
+          to: remoteForm.value.remoteID,
+          status: 'agree'
+        })
+        return
+      }
+
       let notify: NotificationHandle | null = ElNotification({
         message: h('div', { style: 'width: 280px' }, [
-          h('div', { style: 'color: teal' }, `设备【${uuid}】请求与你建立连接`),
+          h('div', { style: 'color: teal' }, `设备【${id}】请求与你建立连接`),
           h('div', { style: 'display: flex; justify-content: space-around;' }, [
             h(ElButton, {
               type: 'success',
@@ -117,7 +152,7 @@ window.electron.ipcRenderer.invoke('system_id').then(({ system_id, code }) => {
         showClose: false,
         position: 'bottom-right'
       })
-      remoteForm.value.remoteID = uuid
+      remoteForm.value.remoteID = id
     })
 
     socket.on('break', () => {
@@ -258,7 +293,7 @@ const mousemove = throttle(
     const { width, height } = video.getBoundingClientRect()
     dataChannel?.send(JSON.stringify({ type: e.type, x: e.offsetX, y: e.offsetY, width, height }))
   },
-  30,
+  100,
   { immediate: true, tail: true }
 )
 const mousedown = (e) => {
@@ -281,7 +316,8 @@ const requestRemote = () => {
   }
   socket.emit('request', {
     from: remoteForm.value.localID,
-    to: remoteForm.value.remoteID
+    to: remoteForm.value.remoteID,
+    code: remoteForm.value.remoteCode
   })
 }
 
@@ -353,10 +389,12 @@ onUnmounted(() => {
 }
 .remote {
   margin-top: 20px;
+  .remote-input .el-input-group__append {
+    padding: 0;
+  }
 }
 .video-container {
   padding-top: 20px;
-  /* 相对定位 */
   position: relative;
   .close-btn {
     display: none;

@@ -118,7 +118,7 @@ export default function addEventListener(mainWindow) {
   })
 
   ipcMain.on('startRecording', async (_, recordingConfig) => {
-    startRecording(recordingConfig)
+    startRecording(recordingConfig, mainWindow)
   })
 
   ipcMain.on('stopRecording', async () => {
@@ -138,17 +138,16 @@ export default function addEventListener(mainWindow) {
     }
   })
 
-  ipcMain.handle('system_id', async () => {
+  ipcMain.handle('id_code', async () => {
     const networkInterfaces = await os.networkInterfaces()
     const nets = Object.values(networkInterfaces).flat(2)
     const MAC = nets.find((item) => !item?.internal && item?.mac !== '00:00:00:00:00:00')?.mac
     const hashMAC = MAC ? crypto.createHash('sha256').update(MAC).digest('hex') : ''
-    const intHash = BigInt('0x' + hashMAC)
-      .toString()
-      .substring(0, 9)
+    const intHash = BigInt('0x' + hashMAC).toString()
+
     return {
-      system_id: intHash,
-      code: intHash
+      system_id: intHash.substring(0, 9),
+      code: intHash.substring(intHash.length - 7, intHash.length - 1)
     }
   })
 
@@ -192,7 +191,7 @@ export default function addEventListener(mainWindow) {
     }
   })
 
-  mouse.config.autoDelayMs = 5
+  mouse.config.mouseSpeed = 0
   ipcMain.on('mouse-move', async (_event, data) => {
     const { width, height } = getSize()
     const W = width / data.width
