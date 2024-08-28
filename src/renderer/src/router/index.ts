@@ -46,13 +46,17 @@ const router = createRouter({
         },
         {
           path: '/main/control',
-          component: () => import('../views/Main/Control/Control.vue')
+          component: () => import('../views/Main/Control/Local.vue')
         }
       ]
     },
     {
       path: '/cut',
       component: () => import('../views/Main/Screen/Cut.vue')
+    },
+    {
+      path: '/remote',
+      component: () => import('../views/Main/Control/RemoteView.vue')
     }
   ]
 })

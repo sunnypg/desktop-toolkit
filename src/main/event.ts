@@ -76,7 +76,8 @@ export default function addEventListener(mainWindow) {
     })
   })
   ipcMain.handle('isMaximized', () => {
-    return mainWindow.isMaximized()
+    const activeWindow = BrowserWindow.getFocusedWindow() as BrowserWindow
+    return activeWindow.isMaximized()
   })
   ipcMain.handle('selectDir', () => {
     return new Promise((resolve, reject) => {
@@ -155,7 +156,8 @@ export default function addEventListener(mainWindow) {
     return pinyin(text, { style: pinyin.STYLE_NORMAL }).join('')
   })
 
-  ipcMain.handle('open-remote', async () => {
+  const windowMap: Map<string, BrowserWindow> = new Map()
+  ipcMain.handle('open-window', async (_, { route, remote_id }) => {
     const remoteWindow = new BrowserWindow({
       width: 1200,
       height: 800,
@@ -167,7 +169,8 @@ export default function addEventListener(mainWindow) {
         contextIsolation: false
       }
     })
-    const routerPath = '#/main/control'
+    if (remote_id) windowMap.set(remote_id, remoteWindow)
+    const routerPath = remote_id ? `#${route}?remote_id=${remote_id}` : `#${route}`
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       let url = process.env['ELECTRON_RENDERER_URL'] + routerPath
       remoteWindow.loadURL(url)
@@ -175,6 +178,26 @@ export default function addEventListener(mainWindow) {
       remoteWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: routerPath })
     }
     remoteWindow.show()
+    remoteWindow.on('close', () => {
+      mainWindow.webContents.send('remote-close', remote_id)
+    })
+  })
+
+  ipcMain.handle('window-handle', (_, { id, type }) => {
+    const window = windowMap.get(id)
+    switch (type) {
+      case 'show':
+        window?.show()
+        break
+      case 'hide':
+        window?.hide()
+        break
+      case 'close':
+        window?.destroy() // 这里不要触发close事件
+        break
+      default:
+        break
+    }
   })
 
   keyboard.config.autoDelayMs = 5
