@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain, clipboard, nativeImage, globalShortcut } from '
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import { getSize } from '../utils'
+import { mouse, Point } from '@scanood/nut-js'
 
 let cutWindow: BrowserWindow
 export default function createCutWindow() {
@@ -39,6 +40,9 @@ ipcMain.on('screenshot', async () => {
 })
 
 export async function screenshot() {
+  const { width, height } = getSize()
+  const point = new Point(width + 10, height + 10)
+  await mouse.move([point]) // 把光标移出屏幕
   const routerPath = '#/cut'
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     let url = process.env['ELECTRON_RENDERER_URL'] + routerPath
@@ -50,6 +54,12 @@ export async function screenshot() {
   cutWindow.maximize()
   cutWindow.setFullScreen(true)
 }
+
+ipcMain.on('show-cursor', () => {
+  const { width, height } = getSize()
+  const point = new Point(width * 0.5, height * 0.5)
+  mouse.move([point])
+})
 
 ipcMain.on('screenshot-callback', (_, data) => {
   data = JSON.parse(data)

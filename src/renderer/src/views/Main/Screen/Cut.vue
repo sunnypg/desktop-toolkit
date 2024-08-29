@@ -19,6 +19,9 @@ onMounted(async () => {
       screenFlow: stream!, // 传入屏幕流数据
       clickCutFullScreen: true, // 单击截全屏
       level: 999,
+      triggerCallback: () => {
+        window.electron.ipcRenderer.send('show-cursor')
+      },
       completeCallback: ({ base64, cutInfo }) => {
         dispatch('complete', { base64, cutInfo })
       },
