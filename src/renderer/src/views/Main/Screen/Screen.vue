@@ -60,6 +60,10 @@
           </div>
         </el-col>
       </el-row>
+      <div v-if="recordingLog.length" ref="recordingLogRef" class="recording-log">
+        <el-icon class="close" @click="recordingLog = []"><Close /></el-icon>
+        <div v-for="item in recordingLog" :key="item" class="log-item">{{ item }}</div>
+      </div>
     </el-card>
     <RecordingConfig ref="recordingConfigRef" @confirm="confirm"></RecordingConfig>
   </div>
@@ -69,6 +73,7 @@
 import { useLightCard } from '@renderer/hooks/use-light-card'
 import RecordingConfig from './cps/RecordingConfig.vue'
 import { ElNotification, ElTag, NotificationHandle } from 'element-plus'
+import { myLocalStorage } from '@renderer/utils/storage'
 
 const { cardRef: cardRef1 } = useLightCard()
 const { cardRef: cardRef2 } = useLightCard({
@@ -94,7 +99,7 @@ const screenshot = async () => {
 
 const recordingConfigRef = ref()
 const confirm = (value) => {
-  localStorage.setItem('recordingConfig', JSON.stringify(value))
+  myLocalStorage.setStorage('recordingConfig', value)
 }
 const recordingConfig = async () => {
   recordingConfigRef.value.show()
@@ -103,7 +108,9 @@ const recordingConfig = async () => {
 const isRecording = ref(false)
 const notification = ref<NotificationHandle | null>(null)
 const startRecording = async () => {
-  let recordingConfig = localStorage.getItem('recordingConfig')
+  if (isRecording.value) return
+  isRecording.value = true
+  let recordingConfig = myLocalStorage.getStorage('recordingConfig')
   if (!recordingConfig) {
     ElMessage({
       type: 'warning',
@@ -111,11 +118,17 @@ const startRecording = async () => {
     })
     return
   }
-  recordingConfig = JSON.parse(recordingConfig)
   window.electron.ipcRenderer.send('startRecording', recordingConfig)
 }
+
+const recordingLogRef = ref()
+const recordingLog = ref<string[]>([])
 window.electron.ipcRenderer.on('recording', (_, data) => {
-  isRecording.value = true
+  recordingLog.value.push(data)
+  nextTick(() => {
+    recordingLogRef.value.scrollTop = recordingLogRef.value.scrollHeight
+  })
+
   if (!notification.value) {
     notification.value = ElNotification({
       title: '开始录屏',
@@ -126,14 +139,13 @@ window.electron.ipcRenderer.on('recording', (_, data) => {
       position: 'bottom-right'
     })
   }
-
-  console.log(data)
 })
 const stopRecording = async () => {
+  if (!isRecording.value) return
+  isRecording.value = false
   window.electron.ipcRenderer.send('stopRecording')
 }
 window.electron.ipcRenderer.on('recording-exit', () => {
-  isRecording.value = false
   if (notification.value) {
     notification.value.close()
     notification.value = null
@@ -151,7 +163,7 @@ window.electron.ipcRenderer.on('recording-exit', () => {
           style: 'width: 290px; margin-left: -30px; overflow: hidden; cursor: pointer;',
           onClick: () => openSavePath(recordingConfig.saveDir)
         },
-        `${recordingConfig.saveDir}`
+        () => recordingConfig.saveDir
       )
     ]),
     duration: 0,
@@ -210,6 +222,28 @@ const audio = async () => {}
       padding: 18px 20px;
       display: flex;
       justify-content: space-between;
+    }
+  }
+
+  .recording-log {
+    position: relative;
+    width: calc(100vw - 167px);
+    height: calc(100vh - 280px);
+    border-radius: 3px;
+    margin-top: 20px;
+    padding: 10px;
+    overflow: auto;
+    background-color: black;
+    font-weight: 300;
+    color: rgb(180, 174, 174);
+    .close {
+      position: sticky;
+      top: 0;
+      left: calc(100vw - 167px);
+      cursor: pointer;
+    }
+    .log-item {
+      padding-bottom: 15px;
     }
   }
 }

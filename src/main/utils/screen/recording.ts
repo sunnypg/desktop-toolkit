@@ -32,8 +32,7 @@ const startRecording = async (config, window: BrowserWindow) => {
 
 const stopRecording = () => {
   if (ffmpegProcess) {
-    // ffmpegProcess.kill('SIGINT')
-    ffmpegProcess.stdin?.write('q')
+    process.platform === 'darwin' ? ffmpegProcess.kill('SIGINT') : ffmpegProcess.stdin?.write('q')
   }
 }
 

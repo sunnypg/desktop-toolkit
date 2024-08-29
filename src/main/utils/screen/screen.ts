@@ -22,8 +22,11 @@ const selfWindows = async () =>
       })
   )
 
-const getDesktopCapturerSource = async () => {
-  return [...(await desktopCapturer.getSources({ types: ['screen'] })), ...(await selfWindows())]
+const getDesktopCapturerSource = async (type: 'screen' | 'window' = 'window') => {
+  return [
+    ...(await desktopCapturer.getSources({ types: ['screen'] })),
+    ...(type === 'screen' ? [] : await selfWindows())
+  ]
 }
 
 export default getDesktopCapturerSource

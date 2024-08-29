@@ -4,7 +4,7 @@ export async function createVideoRTC(
   socket: Socket,
   localID: string,
   remoteID: string
-): Promise<RTCPeerConnection> {
+): Promise<{ peer: RTCPeerConnection; screenData: any }> {
   const peer: RTCPeerConnection = new RTCPeerConnection()
   peer.onicecandidate = ({ candidate }) => {
     if (candidate) {
@@ -18,23 +18,37 @@ export async function createVideoRTC(
     }
   }
 
-  const sources = await window.electron.ipcRenderer.invoke('screen-sources') // 添加本地窗口信息
-  // 添加本地屏幕视频流
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: false,
-    video: {
-      // @ts-ignore
-      mandatory: {
-        chromeMediaSource: 'desktop',
-        chromeMediaSourceId: sources[0].id,
-        maxFrameRate: 60
-      }
+  const sources = await window.electron.ipcRenderer.invoke('screen-sources', 'screen') // 获取所有屏幕源信息
+  const screens = await window.electron.ipcRenderer.invoke('all_screen_size') // 获取所有屏幕尺寸
+
+  // 获取所有屏幕视频流
+  const streams = await Promise.all(
+    sources.map(async (source) =>
+      navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          // @ts-ignore
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: source.id,
+            maxFrameRate: 60
+          }
+        }
+      })
+    )
+  )
+  // 添加屏幕视频流
+  const screenData = streams.map((stream, index) => {
+    stream.getTracks().forEach((track) => {
+      peer.addTrack(track, stream)
+    })
+    return {
+      name: sources[index].name,
+      width: screens[index].size.width,
+      height: screens[index].size.height,
+      stream_id: stream.id
     }
   })
 
-  stream.getTracks().forEach((track) => {
-    peer.addTrack(track, stream)
-  })
-
-  return peer
+  return { peer: peer, screenData }
 }

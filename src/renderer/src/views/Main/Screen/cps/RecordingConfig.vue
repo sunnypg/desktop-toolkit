@@ -97,7 +97,6 @@ interface IFrom {
   saveDir: string
 }
 const form = ref<IFrom>(myLocalStorage.getStorage('recordingConfig') || {})
-console.log(form.value)
 
 const rules = {
   definition: [{ required: true, message: '请选择分辨率', trigger: 'change' }],

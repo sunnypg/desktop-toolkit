@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron'
+import { ipcMain, dialog, shell, BrowserWindow, screen } from 'electron'
 import Spider from './utils/spider/spider'
 import { IProgress } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
@@ -114,8 +114,8 @@ export default function addEventListener(mainWindow) {
     await removeDir(url)
   })
 
-  ipcMain.handle('screen-sources', async () => {
-    return await getDesktopCapturerSource()
+  ipcMain.handle('screen-sources', async (_, type: 'screen' | 'window' = 'window') => {
+    return await getDesktopCapturerSource(type)
   })
 
   ipcMain.on('startRecording', async (_, recordingConfig) => {
@@ -128,6 +128,10 @@ export default function addEventListener(mainWindow) {
 
   ipcMain.handle('screen_size', async () => {
     return getSize()
+  })
+
+  ipcMain.handle('all_screen_size', async () => {
+    return screen.getAllDisplays()
   })
 
   ipcMain.handle('system_info', async () => {
@@ -216,12 +220,7 @@ export default function addEventListener(mainWindow) {
 
   mouse.config.mouseSpeed = 0
   ipcMain.on('mouse-move', async (_event, data) => {
-    const { width, height } = getSize()
-    const W = width / data.width
-    const H = height / data.height
-    const realX = data.x * W
-    const realY = data.y * H
-    const point = new Point(realX, realY)
+    const point = new Point(data.x, data.y)
     await mouse.move([point])
   })
 

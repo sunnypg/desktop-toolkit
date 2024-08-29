@@ -204,11 +204,15 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
 
     // 控制方已打开远程控制窗口
     socket.on('finish', async (remoteID) => {
-      const peer = await createVideoRTC(socket, localID.value, remoteID)
+      const { peer, screenData } = await createVideoRTC(socket, localID.value, remoteID)
       peerMap.set(remoteID, peer)
 
       const channel = peer.createDataChannel(remoteID)
       channelMap.set(remoteID, channel)
+
+      channel.onopen = () => {
+        channel.send(JSON.stringify(screenData))
+      }
 
       channel.onmessage = (event) => {
         const data = JSON.parse(event.data)
@@ -322,6 +326,10 @@ const turnOff = (id) => {
 const requestRemote = () => {
   if (localID.value === remoteForm.value.remoteID) {
     Notification('error', '不能远程控制本机设备')
+    return
+  }
+  if (remoteList.value.find((item) => item.remote_id === remoteForm.value.remoteID)) {
+    Notification('error', '您正在控制此设备，请打开远程控制窗口')
     return
   }
   socket.emit('request', {
