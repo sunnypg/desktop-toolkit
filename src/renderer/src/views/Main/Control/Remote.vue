@@ -4,7 +4,7 @@
       v-if="allScreen.length > 1"
       v-model="currentScreenId"
       class="screen-btn"
-      @change="onChange"
+      @change="onScreenChange"
     >
       <el-radio-button
         v-for="item in allScreen"
@@ -37,12 +37,15 @@ import { useRoute } from 'vue-router'
 import { ElLoading } from 'element-plus'
 
 interface Size {
+  offsetX: number
   width: number
   height: number
 }
-interface ScreenItem extends Size {
+interface ScreenItem {
   name: string
   stream_id: string
+  width: number
+  height: number
 }
 
 const route = useRoute()
@@ -55,6 +58,19 @@ const currentScreenSize = ref<Size>()
 const currentScreenId = ref<string>()
 const peer: RTCPeerConnection = new RTCPeerConnection()
 let channel: RTCDataChannel
+let Loading: ReturnType<typeof ElLoading.service>
+let videoEl: HTMLVideoElement
+
+onMounted(() => {
+  videoEl = document.querySelector('video')!
+  Loading = ElLoading.service({
+    target: '.remote-view',
+    lock: true,
+    text: '正在启动远程控制...',
+    background: 'rgba(0, 0, 0, 0.7)'
+  })
+})
+
 peer.onicecandidate = ({ candidate }) => {
   if (candidate) {
     socket.emit('candidate', {
@@ -64,12 +80,18 @@ peer.onicecandidate = ({ candidate }) => {
     })
   }
 }
+peer.ontrack = (ev: RTCTrackEvent) => {
+  allScreenStream.value = ev.streams
+  currentScreenId.value = ev.streams[0].id
+  changeStream(ev.streams[0].id)
+}
 
-const onChange = (id: any) => {
-  const size = { width: 0, height: 0 }
+const onScreenChange = (id: any) => {
+  const size: Size = { offsetX: 0, width: 0, height: 0 }
   for (const screen of allScreen.value) {
-    size.width += screen.width
+    if (screen.stream_id !== id) size.offsetX += screen.width
     if (screen.stream_id === id) {
+      size.width = screen.width
       size.height = screen.height
       return
     }
@@ -78,29 +100,13 @@ const onChange = (id: any) => {
   changeStream(id)
 }
 
-let Loading = ref()
-onMounted(() => {
-  Loading.value = ElLoading.service({
-    target: '.remote-view',
-    lock: true,
-    text: '正在启动远程控制...',
-    background: 'rgba(0, 0, 0, 0.7)'
-  })
-})
-
 const changeStream = async (id: string) => {
   const stream = allScreenStream.value.find((item) => item.id === id)
   videoRef.value.srcObject = stream
   videoRef.value.onloadedmetadata = () => {
     videoRef.value.play()
-    Loading.value.close()
+    Loading.close()
   }
-}
-
-peer.ontrack = (ev: RTCTrackEvent) => {
-  allScreenStream.value = ev.streams
-  currentScreenId.value = ev.streams[0].id
-  changeStream(ev.streams[0].id)
 }
 
 const socket = io('http://10.2.0.36:3000')
@@ -112,13 +118,13 @@ socket.on('connect', async () => {
     to: remote_id
   })
 
-  // 收到对方offer
   socket.on('offer', async ({ offer }) => {
     peer.ondatachannel = (event) => {
       channel = event.channel
       channel.onmessage = (event) => {
         allScreen.value = JSON.parse(event.data)
         currentScreenSize.value = {
+          offsetX: 0,
           width: allScreen.value[0].width,
           height: allScreen.value[0].height
         }
@@ -135,7 +141,6 @@ socket.on('connect', async () => {
     })
   })
 
-  // 收到对方candidate后，都添加到自己的peer对象上
   socket.on('candidate', async ({ candidate }) => {
     await peer.addIceCandidate(candidate)
   })
@@ -147,11 +152,11 @@ socket.on('connect', async () => {
 
 const mousemove = throttle(
   (e) => {
-    const video = document.querySelector('video') as HTMLVideoElement
-    const { width, height } = video.getBoundingClientRect()
+    if (!videoEl) return
+    const { width, height } = videoEl.getBoundingClientRect()
     const W = currentScreenSize.value!.width / width
     const H = currentScreenSize.value!.height / height
-    const realX = e.offsetX * W
+    const realX = e.offsetX * W + currentScreenSize.value!.offsetX
     const realY = e.offsetY * H
     channel.send(JSON.stringify({ type: e.type, x: realX, y: realY }))
   },

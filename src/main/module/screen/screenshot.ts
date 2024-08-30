@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, clipboard, nativeImage, globalShortcut } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
-import { getSize } from '../utils'
+import { getSize } from '../app'
 import { mouse, Point } from '@scanood/nut-js'
 
 let cutWindow: BrowserWindow

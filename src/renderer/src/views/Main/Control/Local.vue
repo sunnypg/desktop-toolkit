@@ -255,13 +255,11 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
       })
     })
 
-    // 收到对方answer
     socket.on('answer', async ({ from, answer }) => {
       const peer = peerMap.get(from)
       await peer?.setRemoteDescription(answer)
     })
 
-    // 收到对方candidate后，都添加到自己的peer对象上
     socket.on('candidate', async ({ from, candidate }) => {
       const peer = peerMap.get(from)
       await peer?.addIceCandidate(candidate)

@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import addEventListener from './event'
 import createTray from './tray'
-import createCutWindow from './utils/screen/screenshot'
+import createCutWindow from './module/screen/screenshot'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

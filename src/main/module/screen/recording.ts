@@ -1,8 +1,8 @@
 import { spawn, ChildProcess } from 'child_process'
 import ffmpegPath from 'ffmpeg-static'
 import { join } from 'path'
-import { getSize } from '../utils'
 import { BrowserWindow } from 'electron'
+import { getSize } from '../app'
 
 let ffmpegProcess: ChildProcess | null = null
 const startRecording = async (config, window: BrowserWindow) => {

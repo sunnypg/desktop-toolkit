@@ -1,6 +1,6 @@
 const { Tray, Menu } = require('electron')
 import { join } from 'path'
-import { screenshot } from './utils/screen/screenshot'
+import { screenshot } from './module/screen/screenshot'
 
 export default function createTray(win) {
   const tray = new Tray(join(__dirname, '../../resources/logo.png'))

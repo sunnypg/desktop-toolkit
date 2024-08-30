@@ -106,7 +106,7 @@ const recordingConfig = async () => {
 }
 
 const isRecording = ref(false)
-const notification = ref<NotificationHandle | null>(null)
+let notification: NotificationHandle | null
 const startRecording = async () => {
   if (isRecording.value) return
   isRecording.value = true
@@ -129,8 +129,8 @@ window.electron.ipcRenderer.on('recording', (_, data) => {
     recordingLogRef.value.scrollTop = recordingLogRef.value.scrollHeight
   })
 
-  if (!notification.value) {
-    notification.value = ElNotification({
+  if (!notification) {
+    notification = ElNotification({
       title: '开始录屏',
       type: 'info',
       message: h('div', { style: 'color: teal' }, '正在录制中...'),
@@ -146,9 +146,9 @@ const stopRecording = async () => {
   window.electron.ipcRenderer.send('stopRecording')
 }
 window.electron.ipcRenderer.on('recording-exit', () => {
-  if (notification.value) {
-    notification.value.close()
-    notification.value = null
+  if (notification) {
+    notification.close()
+    notification = null
   }
   let recordingConfig = JSON.parse(localStorage.getItem('recordingConfig')!)
   ElNotification({

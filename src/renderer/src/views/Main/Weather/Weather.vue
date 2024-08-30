@@ -430,9 +430,7 @@ const setEChartOptions = async () => {
         showSymbol: true,
         smooth: true,
         itemStyle: {
-          normal: {
-            color: '#FFA033'
-          }
+          color: '#FFA033'
         },
         label: {
           show: true,
@@ -458,9 +456,7 @@ const setEChartOptions = async () => {
         showSymbol: true,
         smooth: true,
         itemStyle: {
-          normal: {
-            color: '#5CADFF'
-          }
+          color: '#5CADFF'
         },
         label: {
           show: true,
