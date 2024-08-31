@@ -1,29 +1,21 @@
 <template>
   <div class="remote-view">
-    <el-radio-group
-      v-if="allScreen.length > 1"
-      v-model="currentScreenId"
-      class="screen-btn"
-      @change="onScreenChange"
-    >
-      <el-radio-button
-        v-for="item in allScreen"
-        :key="item.stream_id"
-        :label="item.name"
-        :value="item.stream_id"
-      />
-    </el-radio-group>
+    <FloatBall
+      :current-screen-id="currentScreenId"
+      :all-screen="allScreen"
+      @screen-change="onScreenChange"
+    />
     <video
       ref="videoRef"
-      class="remote-video"
       tabindex="-1"
       width="100%"
       height="100%"
       autoplay
+      style="margin-top: 35px"
       @mousedown="onMouseClick"
       @mouseup="onMouseClick"
-      @mousemove="mousemove"
-      @mousewheel="mousewheel"
+      @mousemove="onMouseMove"
+      @mousewheel="onMouseWheel"
       @keydown="onKeyboard"
       @keyup="onKeyboard"
     ></video>
@@ -35,18 +27,8 @@ import { io } from 'socket.io-client'
 import { throttle } from '@renderer/utils'
 import { useRoute } from 'vue-router'
 import { ElLoading } from 'element-plus'
-
-interface Size {
-  offsetX: number
-  width: number
-  height: number
-}
-interface ScreenItem {
-  name: string
-  stream_id: string
-  width: number
-  height: number
-}
+import FloatBall from './FloatBall.vue'
+import { ScreenItem, Size } from './type'
 
 const route = useRoute()
 const remote_id = route.query.remote_id
@@ -55,7 +37,7 @@ const videoRef = ref()
 const allScreen = ref<ScreenItem[]>([])
 const allScreenStream = ref<RTCTrackEvent['streams']>([])
 const currentScreenSize = ref<Size>()
-const currentScreenId = ref<string>()
+const currentScreenId = ref<string>('')
 const peer: RTCPeerConnection = new RTCPeerConnection()
 let channel: RTCDataChannel
 let Loading: ReturnType<typeof ElLoading.service>
@@ -150,7 +132,7 @@ socket.on('connect', async () => {
   })
 })
 
-const mousemove = throttle(
+const onMouseMove = throttle(
   (e) => {
     if (!videoEl) return
     const { width, height } = videoEl.getBoundingClientRect()
@@ -166,23 +148,10 @@ const mousemove = throttle(
 const onMouseClick = (e) => {
   channel.send(JSON.stringify({ type: e.type, button: e.button }))
 }
-const mousewheel = (e) => {
+const onMouseWheel = (e) => {
   channel.send(JSON.stringify({ type: e.type, deltaY: e.deltaY }))
 }
 const onKeyboard = (e) => {
   channel.send(JSON.stringify({ type: e.type, code: e.code }))
 }
 </script>
-
-<style scoped lang="less">
-.screen-btn {
-  z-index: 1000;
-  position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.remote-video {
-  margin-top: 35px;
-}
-</style>
