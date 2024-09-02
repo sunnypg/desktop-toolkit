@@ -11,7 +11,7 @@ import { getDesktopCapturerSource } from './module/screen/screen'
 import { getDeviceIdCode, openWindow, windowAction } from './module/remote/remote'
 import { keyboardAction, mouseAction, mousemoveAction } from './module/remote/remote-event'
 
-export default function addEventListener(mainWindow) {
+export default function addEventListener(mainWindow, trayWindow) {
   ipcMain.on('resize', (_, type) => {
     appAction(type)
   })
@@ -65,8 +65,8 @@ export default function addEventListener(mainWindow) {
     return await getDesktopCapturerSource(type)
   })
 
-  ipcMain.on('startRecording', async (_, recordingConfig) => {
-    startRecording(recordingConfig, mainWindow)
+  ipcMain.on('startRecording', async (_, recordingConfig: any) => {
+    startRecording(recordingConfig, mainWindow, trayWindow)
   })
 
   ipcMain.on('stopRecording', async () => {

@@ -1,5 +1,5 @@
 <template>
-  <div ref="draggableRef" class="draggable">
+  <div v-if="!hideMainController" ref="draggableRef" class="draggable">
     <div class="main-controller">
       <span @click="resize('reload')">
         <el-icon><Refresh /></el-icon>
@@ -21,8 +21,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import useDrag from '@renderer/hooks/useDrag'
+
+const route = useRoute()
+const hideMainController = computed(() => route.meta?.hideMainController)
 
 const draggableRef = useDrag()
 

@@ -24,12 +24,8 @@
               </span>
             </div>
             <div class="content">
-              <div>
-                <el-icon @click="startRecording"><Camera /></el-icon>
-              </div>
-              <div>
-                <el-icon @click="stopRecording"><VideoPause /></el-icon>
-              </div>
+              <el-icon v-if="!isRecording" @click="startRecording"><Camera /></el-icon>
+              <el-icon v-else @click="stopRecording"><VideoPause /></el-icon>
             </div>
           </div>
         </el-col>
@@ -124,6 +120,7 @@ const startRecording = async () => {
 const recordingLogRef = ref()
 const recordingLog = ref<string[]>([])
 window.electron.ipcRenderer.on('recording', (_, data) => {
+  isRecording.value = true
   recordingLog.value.push(data)
   nextTick(() => {
     recordingLogRef.value.scrollTop = recordingLogRef.value.scrollHeight
@@ -145,7 +142,9 @@ const stopRecording = async () => {
   isRecording.value = false
   window.electron.ipcRenderer.send('stopRecording')
 }
+
 window.electron.ipcRenderer.on('recording-exit', () => {
+  isRecording.value = false
   if (notification) {
     notification.close()
     notification = null
@@ -170,6 +169,9 @@ window.electron.ipcRenderer.on('recording-exit', () => {
     position: 'bottom-right'
   })
 })
+
+window.electron.ipcRenderer.on('recording-start', startRecording)
+window.electron.ipcRenderer.on('recording-stop', stopRecording)
 
 const openSavePath = async (path) => {
   const res = await window.electron.ipcRenderer.invoke('open-dir', path)

@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import addEventListener from './event'
 import createTray from './tray'
 import createCutWindow from './module/screen/screenshot'
+import registerGlobalShortcut from './shortcut'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -34,8 +35,9 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  addEventListener(mainWindow)
-  createTray(mainWindow)
+  const trayWindow = createTray(mainWindow)
+  addEventListener(mainWindow, trayWindow)
+  registerGlobalShortcut(trayWindow)
 
   // 添加右键菜单
   const contextMenu = Menu.buildFromTemplate([

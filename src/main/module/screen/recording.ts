@@ -5,7 +5,11 @@ import { BrowserWindow } from 'electron'
 import { getSize } from '../app'
 
 let ffmpegProcess: ChildProcess | null = null
-const startRecording = async (config, window: BrowserWindow) => {
+const startRecording = async (
+  config: any,
+  mainWindow: BrowserWindow,
+  trayWindow: BrowserWindow
+) => {
   let ffmpegCommand
   let { definition, fps, type, saveDir } = config
   const { width, height } = getSize()
@@ -23,10 +27,12 @@ const startRecording = async (config, window: BrowserWindow) => {
 
   ffmpegProcess = spawn(ffmpegCommand, { shell: true })
   ffmpegProcess!.stderr!.on('data', (data) => {
-    window.webContents.send('recording', data.toString())
+    mainWindow.webContents.send('recording', data.toString())
+    trayWindow.webContents.send('recording')
   })
   ffmpegProcess.on('exit', () => {
-    window.webContents.send('recording-exit')
+    mainWindow.webContents.send('recording-exit')
+    trayWindow.webContents.send('recording-exit')
   })
 }
 

@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, clipboard, nativeImage, globalShortcut } from 'electron'
+import { BrowserWindow, ipcMain, clipboard, nativeImage } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { join } from 'path'
 import { getSize } from '../app'
@@ -30,9 +30,6 @@ export default function createCutWindow() {
   })
 
   cutWindow.hide()
-  globalShortcut.register('CommandOrControl+Q', () => {
-    screenshot()
-  })
 }
 
 ipcMain.on('screenshot', async () => {

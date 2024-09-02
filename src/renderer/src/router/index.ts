@@ -52,11 +52,21 @@ const router = createRouter({
     },
     {
       path: '/cut',
-      component: () => import('../views/Main/Screen/Cut.vue')
+      component: () => import('../views/Main/Screen/Cut.vue'),
+      meta: {
+        hideMainController: true
+      }
     },
     {
       path: '/remote',
       component: () => import('../views/Main/Control/Remote.vue')
+    },
+    {
+      path: '/tray',
+      component: () => import('../views/Main/Tray/Tray.vue'),
+      meta: {
+        hideMainController: true
+      }
     }
   ]
 })
