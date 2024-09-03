@@ -1,12 +1,13 @@
-import { BrowserWindow, globalShortcut } from 'electron'
+import { globalShortcut } from 'electron'
 import { screenshot } from './module/screen/screenshot'
+import { onRecordingStart, stopRecording } from './module/screen/recording'
 
 interface Shortcut {
   key: string
   callback: () => any
 }
 
-export default function registerGlobalShortcut(trayWindow: BrowserWindow) {
+export default function registerGlobalShortcut() {
   const shortcutList: Shortcut[] = [
     {
       key: 'CommandOrControl+Q',
@@ -14,11 +15,11 @@ export default function registerGlobalShortcut(trayWindow: BrowserWindow) {
     },
     {
       key: 'CommandOrControl+R',
-      callback: () => trayWindow.webContents.send('shortcut-start-recording')
+      callback: onRecordingStart
     },
     {
       key: 'CommandOrControl+T',
-      callback: () => trayWindow.webContents.send('shortcut-stop-recording')
+      callback: stopRecording
     }
   ]
 

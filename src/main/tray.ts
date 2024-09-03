@@ -22,6 +22,7 @@ export default function createTray(win) {
     resizable: false,
     minimizable: false,
     maximizable: false,
+    transparent: true,
     skipTaskbar: true,
     autoHideMenuBar: true,
     alwaysOnTop: true,
@@ -49,7 +50,6 @@ export default function createTray(win) {
       screenHeight - trayBounds.height / 2 - height
     )
     trayWindow.show()
-    trayWindow.webContents.send('reload')
   })
 
   trayWindow.on('blur', () => {

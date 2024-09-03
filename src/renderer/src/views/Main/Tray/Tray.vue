@@ -16,8 +16,6 @@
 </template>
 
 <script setup lang="ts">
-import { myLocalStorage } from '@renderer/utils/storage'
-
 interface TrayMenuItem {
   label: string
   type?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
@@ -29,16 +27,41 @@ interface TrayMenuItem {
   click: () => void
 }
 
-window.electron.ipcRenderer.on('reload', () => {
-  trayMenu.value.forEach((item) => {
-    if (item.label === '开始录屏') {
-      item.disabled = !myLocalStorage.getStorage('recordingConfig')
-    }
-    if (item.label === '停止录屏') {
-      item.disabled = true
-    }
-  })
-})
+const startRecording = () => {
+  window.electron.ipcRenderer.send('recording-start')
+}
+
+const stopRecording = () => {
+  window.electron.ipcRenderer.send('main-recording-stop')
+}
+
+const trayMenu = ref<TrayMenuItem[]>([
+  {
+    label: '开始录屏',
+    shortcutKey: 'Ctrl+R',
+    icon: 'Camera',
+    click: startRecording
+  },
+  {
+    label: '停止录屏',
+    shortcutKey: 'Ctrl+T',
+    icon: 'VideoPause',
+    disabled: true,
+    click: stopRecording
+  },
+  {
+    label: '截图',
+    shortcutKey: 'Ctrl+Q',
+    icon: 'Scissor',
+    click: () => window.electron.ipcRenderer.send('screenshot')
+  },
+  {
+    label: '退出',
+    type: 'danger',
+    icon: 'SwitchButton',
+    click: () => window.electron.ipcRenderer.send('exit')
+  }
+])
 
 window.electron.ipcRenderer.on('recording', () => {
   trayMenu.value.forEach((item) => {
@@ -61,51 +84,14 @@ window.electron.ipcRenderer.on('recording-exit', () => {
     }
   })
 })
-
-const startRecording = () => {
-  let recordingConfig = myLocalStorage.getStorage('recordingConfig')
-  if (!recordingConfig) return
-  window.electron.ipcRenderer.send('startRecording', recordingConfig)
-}
-window.electron.ipcRenderer.on('shortcut-start-recording', startRecording)
-
-const stopRecording = () => {
-  window.electron.ipcRenderer.send('stopRecording')
-}
-window.electron.ipcRenderer.on('shortcut-stop-recording', stopRecording)
-
-const trayMenu = ref<TrayMenuItem[]>([
-  {
-    label: '开始录屏',
-    shortcutKey: 'Ctrl+R',
-    icon: 'Camera',
-    disabled: !myLocalStorage.getStorage('recordingConfig'),
-    click: startRecording
-  },
-  {
-    label: '停止录屏',
-    shortcutKey: 'Ctrl+T',
-    icon: 'VideoPause',
-    disabled: !myLocalStorage.getStorage('recordingConfig'),
-    click: stopRecording
-  },
-  {
-    label: '截图',
-    shortcutKey: 'Ctrl+Q',
-    icon: 'Scissor',
-    click: () => window.electron.ipcRenderer.send('screenshot')
-  },
-  {
-    label: '退出',
-    type: 'danger',
-    icon: 'SwitchButton',
-    click: () => window.electron.ipcRenderer.send('exit')
-  }
-])
 </script>
 
 <style scoped lang="less">
-.tray-menu-item {
+.tray-menu {
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+
   .item-btn {
     width: 100%;
     border-radius: 0;

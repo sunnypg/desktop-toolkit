@@ -18,7 +18,7 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/control'
+          redirect: '/main/screen'
         },
         {
           path: '/main/home',
@@ -53,6 +53,13 @@ const router = createRouter({
     {
       path: '/cut',
       component: () => import('../views/Main/Screen/Cut.vue'),
+      meta: {
+        hideMainController: true
+      }
+    },
+    {
+      path: '/recording',
+      component: () => import('../views/Main/Screen/Recording.vue'),
       meta: {
         hideMainController: true
       }

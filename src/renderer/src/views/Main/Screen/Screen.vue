@@ -17,15 +17,14 @@
         </el-col>
         <el-col :span="6">
           <div ref="cardRef2" class="card">
-            <div class="header" @click="recordingConfig">
+            <div class="header" @click="showRecordingConfig">
               <h3>录屏</h3>
               <span class="more">
                 更多<el-icon><ArrowRight /></el-icon>
               </span>
             </div>
             <div class="content">
-              <el-icon v-if="!isRecording" @click="startRecording"><Camera /></el-icon>
-              <el-icon v-else @click="stopRecording"><VideoPause /></el-icon>
+              <el-icon @click="startRecording"><Camera /></el-icon>
             </div>
           </div>
         </el-col>
@@ -56,10 +55,6 @@
           </div>
         </el-col>
       </el-row>
-      <div v-if="recordingLog.length" ref="recordingLogRef" class="recording-log">
-        <el-icon class="close" @click="recordingLog = []"><Close /></el-icon>
-        <div v-for="item in recordingLog" :key="item" class="log-item">{{ item }}</div>
-      </div>
     </el-card>
     <RecordingConfig ref="recordingConfigRef" @confirm="confirm"></RecordingConfig>
   </div>
@@ -68,8 +63,8 @@
 <script setup lang="ts">
 import { useLightCard } from '@renderer/hooks/use-light-card'
 import RecordingConfig from './cps/RecordingConfig.vue'
-import { ElNotification, ElTag, NotificationHandle } from 'element-plus'
 import { myLocalStorage } from '@renderer/utils/storage'
+import { useRoute } from 'vue-router'
 
 const { cardRef: cardRef1 } = useLightCard()
 const { cardRef: cardRef2 } = useLightCard({
@@ -97,88 +92,25 @@ const recordingConfigRef = ref()
 const confirm = (value) => {
   myLocalStorage.setStorage('recordingConfig', value)
 }
-const recordingConfig = async () => {
+const showRecordingConfig = async () => {
   recordingConfigRef.value.show()
 }
 
-const isRecording = ref(false)
-let notification: NotificationHandle | null
+const route = useRoute()
+watch(
+  () => route.query,
+  (newVal) => {
+    if (newVal.id) {
+      nextTick(() => {
+        recordingConfigRef.value.show()
+      })
+    }
+  },
+  { immediate: true }
+)
+
 const startRecording = async () => {
-  if (isRecording.value) return
-  isRecording.value = true
-  let recordingConfig = myLocalStorage.getStorage('recordingConfig')
-  if (!recordingConfig) {
-    ElMessage({
-      type: 'warning',
-      message: '请先填写录屏配置'
-    })
-    return
-  }
-  window.electron.ipcRenderer.send('startRecording', recordingConfig)
-}
-
-const recordingLogRef = ref()
-const recordingLog = ref<string[]>([])
-window.electron.ipcRenderer.on('recording', (_, data) => {
-  isRecording.value = true
-  recordingLog.value.push(data)
-  nextTick(() => {
-    recordingLogRef.value.scrollTop = recordingLogRef.value.scrollHeight
-  })
-
-  if (!notification) {
-    notification = ElNotification({
-      title: '开始录屏',
-      type: 'info',
-      message: h('div', { style: 'color: teal' }, '正在录制中...'),
-      showClose: false,
-      duration: 0,
-      position: 'bottom-right'
-    })
-  }
-})
-const stopRecording = async () => {
-  if (!isRecording.value) return
-  isRecording.value = false
-  window.electron.ipcRenderer.send('stopRecording')
-}
-
-window.electron.ipcRenderer.on('recording-exit', () => {
-  isRecording.value = false
-  if (notification) {
-    notification.close()
-    notification = null
-  }
-  let recordingConfig = JSON.parse(localStorage.getItem('recordingConfig')!)
-  ElNotification({
-    title: '录制完成',
-    type: 'success',
-    message: h('div', { style: 'width:100%;' }, [
-      h('span', { style: 'color: teal; margin-left: -30px;' }, '录制完成，请打开保存目录查看'),
-      h(
-        ElTag,
-        {
-          type: 'success',
-          style: 'width: 290px; margin-left: -30px; overflow: hidden; cursor: pointer;',
-          onClick: () => openSavePath(recordingConfig.saveDir)
-        },
-        () => recordingConfig.saveDir
-      )
-    ]),
-    duration: 0,
-    position: 'bottom-right'
-  })
-})
-
-window.electron.ipcRenderer.on('recording-start', startRecording)
-window.electron.ipcRenderer.on('recording-stop', stopRecording)
-
-const openSavePath = async (path) => {
-  const res = await window.electron.ipcRenderer.invoke('open-dir', path)
-  ElMessage({
-    message: res.message,
-    type: res.isExist ? 'success' : 'error'
-  })
+  window.electron.ipcRenderer.send('recording-start')
 }
 
 const video = async () => {}

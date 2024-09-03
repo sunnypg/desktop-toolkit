@@ -5,6 +5,7 @@ import addEventListener from './event'
 import createTray from './tray'
 import createCutWindow from './module/screen/screenshot'
 import registerGlobalShortcut from './shortcut'
+import { createRecordingWindow } from './module/screen/recording'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -37,7 +38,8 @@ function createWindow(): void {
 
   const trayWindow = createTray(mainWindow)
   addEventListener(mainWindow, trayWindow)
-  registerGlobalShortcut(trayWindow)
+  createRecordingWindow(mainWindow)
+  registerGlobalShortcut()
 
   // 添加右键菜单
   const contextMenu = Menu.buildFromTemplate([

@@ -87,6 +87,7 @@ window.electron.ipcRenderer.invoke('screen_size').then((res) => {
 const dialogVisible = ref(false)
 const show = () => {
   dialogVisible.value = true
+  form.value = myLocalStorage.getStorage('recordingConfig') || {}
 }
 
 const ruleFormRef = ref<FormInstance>()

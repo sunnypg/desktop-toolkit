@@ -65,11 +65,11 @@ export default function addEventListener(mainWindow, trayWindow) {
     return await getDesktopCapturerSource(type)
   })
 
-  ipcMain.on('startRecording', async (_, recordingConfig: any) => {
-    startRecording(recordingConfig, mainWindow, trayWindow)
+  ipcMain.on('main-recording-start', async (_, recordingConfig: any) => {
+    startRecording(recordingConfig, trayWindow)
   })
 
-  ipcMain.on('stopRecording', async () => {
+  ipcMain.on('main-recording-stop', async () => {
     stopRecording()
   })
 
