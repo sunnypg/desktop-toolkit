@@ -6,6 +6,7 @@ interface bookmarksItem {
 export interface IBrowser {
   id: string
   name: string
+  chromePath: string
   urls: string[]
   note?: string
   system: string

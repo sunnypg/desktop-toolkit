@@ -1,10 +1,10 @@
-const puppeteer = require('puppeteer')
+const puppeteer = require('puppeteer-core')
 const cheerio = require('cheerio')
 const axios = require('axios').default
 const { createWriteStream } = require('fs')
 const fs = require('fs').promises
 const path = require('path')
-import { IProgress } from '../../../types/spider.type'
+import { IProgress, SpiderOptions } from '../../../types/spider.type'
 import Logger from './logger'
 
 const typeToDir = {
@@ -171,7 +171,6 @@ class Site {
       this.saveDir = path.join(this.savePath, dir)
       await fs.mkdir(this.saveDir, { recursive: true })
       await fs.writeFile(path.join(this.saveDir, 'index.html'), htmlContent, 'utf8')
-      // await page.screenshot({ path: path.join(saveDir, "index.png"), fullPage: true });
 
       // 获取页面资源
       const { allCss, allJs, allImg, allBg } = await getResource(this.page)
@@ -333,7 +332,7 @@ export default class Spider {
   headless: boolean
   siteMap: Map<string, Site>
   eventMap: Map<string, any[]>
-  constructor(options) {
+  constructor(options: SpiderOptions) {
     this.urls = options.urls
     this.finish_num = 0
     this.resource_num = 0
@@ -341,19 +340,21 @@ export default class Spider {
     this.headless = options.headless
     this.siteMap = new Map()
     this.eventMap = new Map()
-    this.init()
+    this.init(options.chromePath)
     logger = new Logger({ savePath: `${this.savePath}/error.log` })
   }
 
-  async init() {
+  async init(chromePath: string) {
     const browser = await puppeteer.launch({
-      // executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      executablePath: chromePath,
       headless: this.headless
     })
 
-    this.urls.forEach(async (url) => {
+    const [fristPage] = await browser.pages()
+    this.urls.forEach(async (url, index) => {
       try {
-        const page = await browser.newPage()
+        let page = fristPage
+        if (index > 0) page = await browser.newPage()
         await page.goto(url, { waitUntil: 'networkidle2' })
         const site = new Site({
           page,

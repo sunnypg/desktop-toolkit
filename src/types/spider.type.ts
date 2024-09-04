@@ -7,3 +7,10 @@ export interface IProgress {
   current: number
   total: number
 }
+
+export interface SpiderOptions {
+  urls: string[]
+  savePath: string
+  headless: boolean
+  chromePath: string
+}

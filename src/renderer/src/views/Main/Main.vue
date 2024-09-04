@@ -9,16 +9,21 @@
         <el-main>
           <router-view v-slot="{ Component }">
             <keep-alive>
-              <component :is="Component" />
+              <component :is="Component" @set-chrome-path="() => checkChromeRef?.show()" />
             </keep-alive>
           </router-view>
         </el-main>
       </el-container>
     </el-container>
+    <check-chrome ref="checkChromeRef" />
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import CheckChrome from '@renderer/components/CheckChrome/CheckChrome.vue'
+
+const checkChromeRef = ref<InstanceType<typeof CheckChrome>>()
+</script>
 
 <style lang="less" scoped>
 .main {

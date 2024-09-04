@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow, screen } from 'electron'
 import Spider from './module/spider/spider'
-import { IProgress } from '../types/spider.type'
+import { IProgress, SpiderOptions } from '../types/spider.type'
 import { IBrowser } from '../types/browser.type'
 import BrowserPool from './module/browser/BrowserPool'
 import { startRecording, stopRecording } from './module/screen/recording'
@@ -10,14 +10,23 @@ import pinyin from 'pinyin'
 import { getDesktopCapturerSource } from './module/screen/screen'
 import { getDeviceIdCode, openWindow, windowAction } from './module/remote/remote'
 import { keyboardAction, mouseAction, mousemoveAction } from './module/remote/remote-event'
+import { downloadBrowser, getChromePath } from './module/browser/downloadBrowser'
 
 export default function addEventListener(mainWindow, trayWindow) {
   ipcMain.on('resize', (_, type) => {
     appAction(type)
   })
 
+  ipcMain.handle('get-chrome-path', async () => {
+    return getChromePath()
+  })
+
+  ipcMain.handle('download-chrome', () => {
+    return downloadBrowser()
+  })
+
   let spider: any = null
-  ipcMain.on('start', (_, options) => {
+  ipcMain.on('start', (_, options: SpiderOptions) => {
     spider = new Spider(options)
     spider.on('progress', (progressInfo: IProgress) => {
       mainWindow.webContents.send('progress', progressInfo)
@@ -48,8 +57,8 @@ export default function addEventListener(mainWindow, trayWindow) {
   browserPool.on('disconnected', (info) => {
     mainWindow.webContents.send('disconnected', info)
   })
-  ipcMain.handle('open', async (_, browser) => {
-    browser = { ...browser, bookmarks: JSON.parse(browser.bookmarks) }
+  ipcMain.handle('open', async (_, browser: IBrowser) => {
+    browser = { ...browser, bookmarks: browser.bookmarks }
     await browserPool.open(browser)
   })
 

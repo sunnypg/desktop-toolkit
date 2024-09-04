@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer')
+const puppeteer = require('puppeteer-core')
 import { IBrowser } from '../../../types/browser.type'
 import setBookmarks from './setBookmarks'
 
@@ -17,6 +17,7 @@ export default class BrowserPool {
       try {
         const browser = await puppeteer.launch({
           headless: false,
+          executablePath: options.chromePath,
           defaultViewport: null,
           args: [
             `--user-agent=${options.userAgent}`,
@@ -59,8 +60,10 @@ export default class BrowserPool {
             height: window.innerHeight
           }
         })
-        await fristPage.goto('chrome://bookmarks/')
-        await setBookmarks(fristPage, options.bookmarks)
+        if (options.bookmarks) {
+          await fristPage.goto('chrome://bookmarks/')
+          await setBookmarks(fristPage, options.bookmarks)
+        }
         fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' }).then(() => {})
         fristPage.setViewport({ width: windowSize.width, height: windowSize.height })
 

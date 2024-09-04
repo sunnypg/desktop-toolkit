@@ -2,74 +2,53 @@ import { app } from 'electron'
 import axios from 'axios'
 const path = require('path')
 const browserApi = require('@puppeteer/browsers')
-const puppeteer = require('puppeteer-core')
 
-const cacheDir = path.join(app.getPath('appData'), 'myBrowser')
+const cacheDir = path.join(app.getPath('appData'), 'chrome')
+
 // 获取最新的chromium构建ID
 function getLastBuildId() {
   return new Promise((resolve, reject) => {
+    const url = `https://download-chromium.appspot.com/rev/${process.platform === 'darwin' ? 'mac' : 'Win_x64'}?type=snapshots`
     axios
-      .get(`https://download-chromium.appspot.com/rev/Win_x64?type=snapshots`)
+      .get(url)
       .then((res) => resolve(res.data.content))
       .catch(reject)
   })
 }
 
 // 获取安装的浏览器路径
-async function getChromePath() {
-  return new Promise((resolve, reject) => {
+function getChromePath() {
+  return new Promise((resolve) => {
     browserApi
       .getInstalledBrowsers({ cacheDir })
       .then((list) => {
         const executablePath = list[0]?.executablePath
         if (executablePath) {
-          resolve(executablePath)
+          resolve({ message: '获取成功', path: executablePath })
         } else {
-          reject('未安装浏览器')
+          resolve({ message: '未安装浏览器' })
         }
       })
-      .catch((err) => reject(err))
+      .catch(() => resolve({ message: '获取失败' }))
   })
 }
 
 // 下载chromium
-export async function downloadBrowser() {
-  try {
-    const buildId = await getLastBuildId()
-    console.log(`缓存地址: ${cacheDir}，构建ID: ${buildId}`)
-
-    browserApi.install({
-      cacheDir,
-      browser: browserApi.Browser.CHROMIUM,
-      buildId,
-      baseUrl: 'https://commondatastorage.googleapis.com/chromium-browser-snapshots'
-    })
-  } catch (error) {
-    console.log('下载失败', error)
-  }
+function downloadBrowser() {
+  return new Promise(async (resolve) => {
+    try {
+      const buildId = await getLastBuildId()
+      await browserApi.install({
+        cacheDir,
+        browser: browserApi.Browser.CHROMIUM,
+        buildId,
+        baseUrl: 'https://commondatastorage.googleapis.com/chromium-browser-snapshots'
+      })
+      resolve({ code: 0, message: '安装成功' })
+    } catch (error) {
+      resolve({ code: 1, message: '安装失败' })
+    }
+  })
 }
 
-// 打开浏览器
-export async function open() {
-  try {
-    const executablePath = await getChromePath()
-
-    const browser = await puppeteer.launch({
-      headless: false,
-      executablePath,
-      defaultViewport: null,
-      ignoreDefaultArgs: ['about:blank']
-    })
-    const [fristPage] = await browser.pages()
-    const windowSize = await fristPage.evaluate(() => {
-      return {
-        width: window.innerWidth,
-        height: window.innerHeight
-      }
-    })
-    fristPage.goto('https://www.browserscan.net/', { waitUntil: 'networkidle2' })
-    fristPage.setViewport({ width: windowSize.width, height: windowSize.height })
-  } catch (error) {
-    console.log('打开失败', error)
-  }
-}
+export { getChromePath, downloadBrowser }

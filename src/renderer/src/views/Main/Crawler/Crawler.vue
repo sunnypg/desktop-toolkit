@@ -1,8 +1,8 @@
 <template>
   <div class="crawler">
     <el-card class="box-card">
-      <el-button type="primary" @click="showDialog" :disabled="spiderStatus">添加网址</el-button>
-      <el-button type="primary" @click="getPages" :disabled="tableData.length === 0 || spiderStatus"
+      <el-button type="primary" :disabled="spiderStatus" @click="showDialog">添加网址</el-button>
+      <el-button type="primary" :disabled="tableData.length === 0 || spiderStatus" @click="getPages"
         >爬取</el-button
       >
       <span v-if="savePath">
@@ -34,10 +34,10 @@
               已完成
             </el-tag>
             <el-tag v-else-if="scope.row.fail" type="danger"> 出错了 </el-tag>
-            <el-button type="primary" v-else-if="scope.row.isPause" @click="start(scope.row)"
+            <el-button v-else-if="scope.row.isPause" type="primary" @click="start(scope.row)"
               >继续</el-button
             >
-            <el-button type="danger" v-else @click="pause(scope.row)">暂停</el-button>
+            <el-button v-else type="danger" @click="pause(scope.row)">暂停</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -49,7 +49,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CrawlerDialog from './cps/CrawlerDialog.vue'
-import { IProgress } from '../../../../../types/spider.type'
+import { IProgress, SpiderOptions } from '../../../../../types/spider.type'
+import { myLocalStorage } from '@renderer/utils/storage'
 
 const crawlerDialogRef = ref<any>()
 const tableData = ref<any[]>([])
@@ -79,16 +80,29 @@ const pause = (row) => {
   window.electron.ipcRenderer.send('operate_spider', { type: 'pause', url: row.address })
 }
 
-const getPages = () => {
+const emit = defineEmits(['setChromePath'])
+const getPages = async () => {
   spiderStatus.value = true
+  let chromePath = myLocalStorage.getStorage('chromePath')
+  if (!chromePath) {
+    const res = await window.electron.ipcRenderer.invoke('get-chrome-path')
+    chromePath = res.path
+  }
+  if (!chromePath) {
+    emit('setChromePath')
+    spiderStatus.value = false
+    return
+  }
+
   tableData.value.forEach((row) => {
     row.isPause = false
   })
   const urls = tableData.value.map((row) => row.address)
-  const options = {
+  const options: SpiderOptions = {
     urls,
-    savePath: savePath.value,
-    headless: headless.value
+    savePath: savePath.value!,
+    headless: headless.value!,
+    chromePath
   }
   window.electron.ipcRenderer.send('start', options)
 }

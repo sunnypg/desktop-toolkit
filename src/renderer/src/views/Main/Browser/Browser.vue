@@ -46,6 +46,7 @@ import { ref } from 'vue'
 import AddDialog from './cps/AddDialog.vue'
 import EditDialog from './cps/EditDialog.vue'
 import { IBrowser } from '../../../../../types/browser.type'
+import { myLocalStorage } from '@renderer/utils/storage'
 
 const addDialogRef = ref()
 const editDialogRef = ref()
@@ -94,14 +95,38 @@ const remove = (row) => {
     })
 }
 
+const emit = defineEmits(['setChromePath'])
 const openOrClose = async (row) => {
+  row.loading = true
+  let chromePath = myLocalStorage.getStorage('chromePath')
+  if (!chromePath) {
+    const res = await window.electron.ipcRenderer.invoke('get-chrome-path')
+    chromePath = res.path
+    console.log(chromePath)
+  }
+  if (!chromePath) {
+    emit('setChromePath')
+    row.loading = false
+    return
+  }
+
   const options: IBrowser = {
-    ...row,
-    urls: row.urls.split('\n').map((item) => item.trim()),
-    bookmarks: JSON.stringify(row.bookmarks.map((item) => ({ title: item.title, url: item.url })))
+    id: row.id,
+    name: row.name,
+    chromePath: chromePath,
+    note: row.note,
+    system: row.system,
+    UA: row.UA,
+    userAgent: row.userAgent,
+    userDataDir: row.userDataDir,
+    proxyUrl: row.proxyUrl,
+    disable_webgl: row.disable_webgl,
+    webgl_mode: row.webgl_mode,
+    urls: row.urls?.split('\n').map((item) => item.trim()) || [],
+    bookmarks: row.bookmarks?.map((item) => ({ title: item.title, url: item.url }))
   }
   const original_status = row.isOpen
-  row.loading = true
+
   await window.electron.ipcRenderer.invoke(row.isOpen ? 'close' : 'open', options)
   row.loading = false
   row.isOpen = !original_status
