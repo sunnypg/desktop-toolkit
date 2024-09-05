@@ -30,20 +30,19 @@
 </template>
 
 <script setup lang="ts">
+import { myLocalStorage } from '@renderer/utils/storage'
 import type { FormInstance } from 'element-plus'
 import { ref } from 'vue'
 
 const dialogVisible = ref(false)
-
-const show = () => {
-  dialogVisible.value = true
-}
-
+const visitor = myLocalStorage.getStorage('visitor')
+const crawlerConfig = visitor ? {} : myLocalStorage.getStorage('crawlerConfig')
 const ruleFormRef = ref<FormInstance>()
+
 const form = ref<any>({
   address: null,
-  savePath: null,
-  headless: false
+  savePath: crawlerConfig?.savePath || null,
+  headless: crawlerConfig?.headless || false
 })
 const rules = {
   address: [{ required: true, message: '请输入网址', trigger: 'blur' }],
@@ -74,6 +73,10 @@ const onClose = () => {
 const selectDir = async () => {
   const dir = await window.electron.ipcRenderer.invoke('selectDir')
   form.value.savePath = dir
+}
+
+const show = () => {
+  dialogVisible.value = true
 }
 
 defineExpose({

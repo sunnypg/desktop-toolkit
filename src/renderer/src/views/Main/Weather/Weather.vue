@@ -1,6 +1,6 @@
 <template>
   <div class="weather">
-    <el-card style="height: calc(100vh - 80px)">
+    <el-card v-loading="loading" style="height: calc(100vh - 80px)">
       <h3>7日天气</h3>
       <div>所在城市：{{ cityName }}</div>
       <div>
@@ -22,7 +22,9 @@ const weatherRef = ref()
 const weather = ref()
 
 let myChart
+const loading = ref(false)
 onMounted(() => {
+  loading.value = true
   myChart = echarts.init(weatherRef.value)
   setEChartOptions()
 })
@@ -476,6 +478,7 @@ const setEChartOptions = async () => {
   }
 
   myChart.setOption(option)
+  loading.value = false
 }
 </script>
 

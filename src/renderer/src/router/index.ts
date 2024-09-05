@@ -18,11 +18,15 @@ const router = createRouter({
       children: [
         {
           path: '/main',
-          redirect: '/main/screen'
+          redirect: '/main/home'
         },
         {
           path: '/main/home',
           component: () => import('../views/Main/Home/Home.vue')
+        },
+        {
+          path: '/main/personal',
+          component: () => import('../views/Main/Personal/Personal.vue')
         },
         {
           path: '/main/weather',
@@ -39,10 +43,6 @@ const router = createRouter({
         {
           path: '/main/screen',
           component: () => import('../views/Main/Screen/Screen.vue')
-        },
-        {
-          path: '/main/personal',
-          component: () => import('../views/Main/Personal/Personal.vue')
         },
         {
           path: '/main/control',
@@ -81,6 +81,12 @@ const router = createRouter({
 // 导航守卫
 router.beforeEach((to, _form, next) => {
   const token = myLocalStorage.getStorage('token')
+  const visitor = myLocalStorage.getStorage('visitor')
+
+  if (visitor) {
+    next()
+    return
+  }
   if (to.path.startsWith('/main') && !token) {
     next('/login')
   } else {

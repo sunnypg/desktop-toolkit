@@ -59,6 +59,14 @@
             <span class="social-icon">
               <SvgIcon icon-name="icon-zhifubao"></SvgIcon>
             </span>
+            <el-tooltip content="游客模式" placement="top">
+              <span class="social-icon" @click="visitorLogin">
+                <SvgIcon
+                  icon-name="icon-youke"
+                  style="font-size: 32px; margin-bottom: 2px"
+                ></SvgIcon>
+              </span>
+            </el-tooltip>
           </div>
         </div>
         <!-- 注册 -->
@@ -189,6 +197,7 @@ const login = async () => {
         return
       } else {
         myLocalStorage.setStorage('token', 'Bearer Token')
+        myLocalStorage.setStorage('visitor', false)
         ElMessage.success('登录成功')
         router.push('/')
       }
@@ -196,6 +205,11 @@ const login = async () => {
       console.log('error submit!', fields)
     }
   })
+}
+
+const visitorLogin = async () => {
+  myLocalStorage.setStorage('visitor', true)
+  router.push('/')
 }
 
 const registerFormRef = ref<FormInstance>()

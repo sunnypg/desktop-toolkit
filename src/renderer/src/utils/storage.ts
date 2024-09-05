@@ -11,7 +11,7 @@ class myStorage {
   }
 
   setStorage(key: string, value: any) {
-    if (value) {
+    if (value || typeof value === 'boolean') {
       this.storage.setItem(key, JSON.stringify(value))
     }
   }

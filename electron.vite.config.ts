@@ -27,7 +27,7 @@ export default defineConfig({
     plugins: [
       vue(),
       AutoImport({
-        imports: ['vue'], // 自动导入 Vue 相关函数，如：ref, reactive, toRef 等
+        imports: ['vue'], // 自动导入 Vue 钩子函数
         resolvers: [
           ElementPlusResolver(),
           // 自动导入图标组件

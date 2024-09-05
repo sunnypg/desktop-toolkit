@@ -11,6 +11,7 @@ import { getDesktopCapturerSource } from './module/screen/screen'
 import { getDeviceIdCode, openWindow, windowAction } from './module/remote/remote'
 import { keyboardAction, mouseAction, mousemoveAction } from './module/remote/remote-event'
 import { downloadBrowser, getChromePath } from './module/browser/downloadBrowser'
+import { convertMillisecondsToTime, sendEmailCode } from './module/emial'
 
 export default function addEventListener(mainWindow, trayWindow) {
   ipcMain.on('resize', (_, type) => {
@@ -125,5 +126,29 @@ export default function addEventListener(mainWindow, trayWindow) {
 
   ipcMain.on('mouse-event', async (_event, data) => {
     mouseAction(data)
+  })
+
+  ipcMain.handle('email-code', async (_event, email: string) => {
+    const code = Math.random().toString().slice(2, 8)
+    const validTime = 5 * 60 * 1000
+    const { messageId, expiry } = await sendEmailCode(email, code, validTime)
+    return {
+      email,
+      code,
+      messageId,
+      expiry
+    }
+  })
+
+  ipcMain.handle('phone-code', async (_event, phone: string) => {
+    const code = Math.random().toString().slice(2, 8)
+    const validTime = 5 * 60 * 1000
+    const time = convertMillisecondsToTime(validTime)
+    return {
+      phone,
+      code,
+      expiry: Date.now() + validTime,
+      message: `您的手机验证码是：${code}，有效时间为${time}`
+    }
   })
 }

@@ -24,10 +24,10 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click="showEdit(row)"
-                    ><el-button type="text" icon="Edit"></el-button
+                    ><el-button type="primary" link icon="Edit"></el-button
                   ></el-dropdown-item>
                   <el-dropdown-item @click="remove(row)"
-                    ><el-button type="text" icon="delete"></el-button
+                    ><el-button type="primary" link icon="delete"></el-button
                   ></el-dropdown-item>
                 </el-dropdown-menu>
               </template>

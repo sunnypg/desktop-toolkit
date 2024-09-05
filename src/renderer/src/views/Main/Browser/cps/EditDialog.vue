@@ -103,7 +103,8 @@
               </el-col>
               <el-col :span="1">
                 <el-button
-                  type="text"
+                  type="primary"
+                  link
                   style="color: #f56c6c"
                   icon="delete"
                   @click="removeBookmark(item)"
@@ -111,7 +112,7 @@
               </el-col>
             </el-row>
           </template>
-          <el-button type="text" icon="plus" @click="addBookmark">新增书签</el-button>
+          <el-button type="primary" link icon="plus" @click="addBookmark">新增书签</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -202,8 +203,6 @@ const onClose = () => {
 const show = (formData) => {
   form.value = formData
   bookmarks.value = formData.bookmarks || []
-  console.log(formData.bookmarks)
-
   dialogVisible.value = true
 }
 
