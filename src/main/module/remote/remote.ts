@@ -18,7 +18,12 @@ export async function getDeviceIdCode() {
 }
 
 const windowMap: Map<string, BrowserWindow> = new Map()
-export function openWindow(route: string, remote_id: string, mainWindow: BrowserWindow) {
+export function openWindow(
+  route: string,
+  remote_id: string,
+  code: string,
+  mainWindow: BrowserWindow
+) {
   const remoteWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -31,7 +36,9 @@ export function openWindow(route: string, remote_id: string, mainWindow: Browser
     }
   })
   if (remote_id) windowMap.set(remote_id, remoteWindow)
-  const routerPath = remote_id ? `#${route}?remote_id=${remote_id}` : `#${route}`
+  const routerPath =
+    remote_id && code ? `#${route}?remote_id=${remote_id}&code=${code}` : `#${route}`
+
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     let url = process.env['ELECTRON_RENDERER_URL'] + routerPath
     remoteWindow.loadURL(url)

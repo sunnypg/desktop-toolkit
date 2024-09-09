@@ -151,7 +151,8 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
         socket.emit('reply', {
           from: localID.value,
           to: from,
-          status: 'agree'
+          status: 'agree',
+          code: localCode.value
         })
         controlledList.value.push({
           remote_id: from
@@ -183,13 +184,14 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
       })
     })
 
-    socket.on('reply', async ({ from, status }) => {
+    socket.on('reply', async ({ from, status, code }) => {
       if (status === 'agree') {
         // 收到对方同意的回复
         Notification('success', `设备【${from}】同意与你建立连接`)
         window.electron.ipcRenderer.invoke('open-window', {
           route: 'remote',
-          remote_id: from
+          remote_id: from,
+          code
         })
         remoteList.value.push({
           remote_id: from,
@@ -203,7 +205,15 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
     })
 
     // 控制方已打开远程控制窗口
-    socket.on('finish', async (remoteID) => {
+    socket.on('finish', async ({ from: remoteID, code }) => {
+      if (code !== localCode.value) {
+        socket.emit('reply', {
+          from: localID.value,
+          to: remoteID,
+          status: 'code-error'
+        })
+        return
+      }
       const { peer, screenData } = await createVideoRTC(socket, localID.value, remoteID)
       peerMap.set(remoteID, peer)
 
@@ -350,7 +360,8 @@ const notifyHandler = async (
   socket.emit('reply', {
     from: localID.value,
     to,
-    status
+    status,
+    ...(status === 'agree' ? { code: localCode.value } : {})
   })
   notify?.close()
   notify = null

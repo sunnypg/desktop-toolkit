@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!hideMainController" ref="draggableRef" class="draggable">
+  <div v-if="!hideMainController && !isBrowser" ref="draggableRef" class="draggable">
     <div class="main-controller">
       <span @click="resize('reload')">
         <el-icon><Refresh /></el-icon>
@@ -26,15 +26,18 @@ import useDrag from '@renderer/hooks/useDrag'
 
 const route = useRoute()
 const hideMainController = computed(() => route.meta?.hideMainController)
+const isBrowser = !window.electron
 
-const draggableRef = useDrag()
+const draggableRef = isBrowser ? '' : useDrag()
 
 const isMax = ref(false)
 function resize(type: string) {
   window.electron.ipcRenderer.send('resize', type)
 }
-window.onresize = async () => {
-  isMax.value = await window.electron.ipcRenderer.invoke('isMaximized')
+if (!isBrowser) {
+  window.onresize = async () => {
+    isMax.value = await window.electron.ipcRenderer.invoke('isMaximized')
+  }
 }
 </script>
 

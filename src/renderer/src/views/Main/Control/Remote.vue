@@ -4,14 +4,14 @@
       :current-screen-id="currentScreenId"
       :all-screen="allScreen"
       @screen-change="onScreenChange"
+      @auto-resize="onAutoResize"
     />
     <video
       ref="videoRef"
       tabindex="-1"
-      width="100%"
-      height="100%"
       autoplay
-      style="margin-top: 35px"
+      muted
+      :style="{ marginTop: isBrowser ? '' : '35px' }"
       @mousedown="onMouseClick"
       @mouseup="onMouseClick"
       @mousemove="onMouseMove"
@@ -32,7 +32,9 @@ import { ScreenItem, Size } from './type'
 
 const route = useRoute()
 const remote_id = route.query.remote_id
-const videoID = crypto.randomUUID()
+const remote_code = route.query.code
+
+const videoID = crypto.randomUUID ? crypto.randomUUID() : Date.now()
 const videoRef = ref()
 const allScreen = ref<ScreenItem[]>([])
 const allScreenStream = ref<RTCTrackEvent['streams']>([])
@@ -41,10 +43,38 @@ const currentScreenId = ref<string>('')
 const peer: RTCPeerConnection = new RTCPeerConnection()
 let channel: RTCDataChannel
 let Loading: ReturnType<typeof ElLoading.service>
-let videoEl: HTMLVideoElement
+const isBrowser = !window.electron
+let isAutoResizeVideo = true
+
+const resizeVideo = () => {
+  if (!currentScreenSize.value || !isAutoResizeVideo) return
+  const remoteRatio = currentScreenSize.value.width / currentScreenSize.value.height
+  const bodyWidth = document.body.clientWidth
+  const bodyHeight = isBrowser ? document.body.clientHeight : document.body.clientHeight - 35
+  const bodyRatio = bodyWidth / bodyHeight
+  if (bodyRatio >= remoteRatio) {
+    videoRef.value.style.height = bodyHeight + 'px'
+    videoRef.value.style.width = bodyHeight * remoteRatio + 'px'
+  } else {
+    videoRef.value.style.width = document.body.clientWidth + 'px'
+    videoRef.value.style.height = document.body.clientWidth / remoteRatio + 'px'
+  }
+}
+
+const onAutoResize = (isAutoResize: boolean) => {
+  isAutoResizeVideo = isAutoResize
+  if (isAutoResize) {
+    resizeVideo()
+  } else {
+    videoRef.value.style.width = '100%'
+    videoRef.value.style.height = '100%'
+  }
+}
+
+window.addEventListener('contextmenu', (e) => e.preventDefault())
+window.addEventListener('resize', resizeVideo)
 
 onMounted(() => {
-  videoEl = document.querySelector('video')!
   Loading = ElLoading.service({
     target: '.remote-view',
     lock: true,
@@ -79,6 +109,7 @@ const onScreenChange = (id: any) => {
     }
   }
   currentScreenSize.value = size
+  resizeVideo()
   changeStream(id)
 }
 
@@ -97,7 +128,8 @@ socket.on('connect', async () => {
   socket.emit('create', videoID)
   socket.emit('finish', {
     from: videoID,
-    to: remote_id
+    to: remote_id,
+    code: remote_code
   })
 
   socket.on('offer', async ({ offer }) => {
@@ -110,6 +142,7 @@ socket.on('connect', async () => {
           width: allScreen.value[0].width,
           height: allScreen.value[0].height
         }
+        resizeVideo()
       }
     }
 
@@ -127,6 +160,13 @@ socket.on('connect', async () => {
     await peer.addIceCandidate(candidate)
   })
 
+  socket.on('reply', ({ status }) => {
+    if (status === 'code-error') {
+      Loading.close()
+      ElMessage.error('验证码错误')
+    }
+  })
+
   socket.on('disconnect', () => {
     console.log('disconnected')
   })
@@ -134,8 +174,8 @@ socket.on('connect', async () => {
 
 const onMouseMove = throttle(
   (e) => {
-    if (!videoEl) return
-    const { width, height } = videoEl.getBoundingClientRect()
+    if (!videoRef.value) return
+    const { width, height } = videoRef.value.getBoundingClientRect()
     const W = currentScreenSize.value!.width / width
     const H = currentScreenSize.value!.height / height
     const realX = e.offsetX * W + currentScreenSize.value!.offsetX
@@ -155,3 +195,11 @@ const onKeyboard = (e) => {
   channel.send(JSON.stringify({ type: e.type, code: e.code }))
 }
 </script>
+
+<style scoped lang="less">
+.remote-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>

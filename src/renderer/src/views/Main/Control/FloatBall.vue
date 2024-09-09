@@ -1,43 +1,158 @@
 <template>
-  <div class="float-ball" @click="onBallClick"></div>
-  <el-radio-group
-    v-if="showScreens"
-    v-model="currentScreenId"
-    class="screen-btn"
-    @change="(id) => emit('screenChange', id)"
+  <div
+    class="float-ball"
+    :style="{ width: showMenu ? '150px' : '40px', height: showMenu ? '150px' : '40px' }"
   >
-    <el-radio-button
-      v-for="item in allScreen"
-      :key="item.stream_id"
-      :label="item.name"
-      :value="item.stream_id"
-    />
-  </el-radio-group>
+    <div class="float-ball-wrapper">
+      <div class="float-ball-btn" @click="onBallClick"></div>
+    </div>
+    <div
+      v-for="(item, index) in menuList"
+      :key="item.label"
+      class="menu-item"
+      :style="`transform: rotate(${index * degree - 126}deg) skew(${90 - degree}deg)`"
+    >
+      <el-tooltip :content="item.label" :placement="item.placement">
+        <div
+          :class="['item-icon', item.id ? 'icon-active' : '']"
+          :style="`transform: skew(${-(90 - degree)}deg)`"
+          @click="item.click"
+        >
+          <el-icon>
+            <svg-icon v-if="item.isCustom" :icon-name="item.icon"></svg-icon>
+            <Component :is="item.icon" v-else></Component>
+          </el-icon>
+        </div>
+      </el-tooltip>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { EpPropMergeType } from 'element-plus/es/utils'
 import { ScreenItem } from './type'
+import { Placement } from 'element-plus'
 
-defineProps<{
+const props = defineProps<{
   allScreen: ScreenItem[]
 }>()
 const currentScreenId = defineModel('currentScreenId', { type: String, required: true })
-const emit = defineEmits(['screenChange'])
-
-const showScreens = ref(false)
+const emit = defineEmits(['screenChange', 'autoResize'])
+const showMenu = ref(false)
 let isDragging = false
+
+interface MenuItem {
+  label: string
+  isCustom?: boolean
+  icon: string
+  placement: EpPropMergeType<StringConstructor, Placement, unknown>
+  id?: string
+  click: () => void
+}
+const menuList = ref<MenuItem[]>([
+  {
+    label: '全屏',
+    isCustom: true,
+    icon: 'icon-quanping',
+    placement: 'top',
+    click: () => {
+      const item = menuList.value[0]
+      if (item.label === '全屏') {
+        item.label = '自适应'
+        item.icon = 'icon-zishiying'
+        emit('autoResize', false)
+      } else {
+        item.label = '全屏'
+        item.icon = 'icon-quanping'
+        emit('autoResize', true)
+      }
+    }
+  },
+  {
+    label: 'menu-item',
+    icon: 'Monitor',
+    placement: 'right',
+    click: () => {}
+  },
+  {
+    label: 'menu-item',
+    icon: 'Monitor',
+    placement: 'right',
+    click: () => {}
+  },
+  {
+    label: 'menu-item',
+    icon: 'Monitor',
+    placement: 'left',
+    click: () => {}
+  },
+  {
+    label: 'menu-item',
+    icon: 'Monitor',
+    placement: 'left',
+    click: () => {}
+  }
+])
+
+const degree = 360 / menuList.value.length
+
+watch(
+  () => props.allScreen,
+  (newValue) => {
+    for (const screen of newValue) {
+      const item = menuList.value.find((item) => item.label === 'menu-item')
+      if (item) {
+        item.label = screen.name
+        item.id = screen.stream_id
+        item.click = () => {
+          currentScreenId.value = screen.stream_id
+          emit('screenChange', screen.stream_id)
+        }
+      }
+    }
+  }
+)
 
 const onBallClick = () => {
   if (isDragging) return
-  showScreens.value = !showScreens.value
+  showMenu.value = !showMenu.value
 }
 
+let start = 40
+const handleResize = (entries) => {
+  entries.forEach((entry) => {
+    const offsetX = (entry.contentRect.width - start) / 2
+    const offsetY = (entry.contentRect.height - start) / 2
+    if (offsetX !== 0 && offsetY !== 0) {
+      floatBall.style.top = floatBall.offsetTop - offsetY + 'px'
+      floatBall.style.left = floatBall.offsetLeft - offsetX + 'px'
+    }
+    start = entry.contentRect.width
+
+    if (floatBall.offsetLeft < 0) floatBall.style.left = 0 + 'px'
+    if (floatBall.offsetTop < 0) floatBall.style.top = 0 + 'px'
+    if (floatBall.offsetLeft + entry.contentRect.width > document.body.offsetWidth) {
+      floatBall.style.left = document.body.offsetWidth - entry.contentRect.width + 'px'
+    }
+    if (floatBall.offsetTop + entry.contentRect.height > document.body.offsetHeight) {
+      floatBall.style.top = document.body.offsetHeight - entry.contentRect.height + 'px'
+    }
+  })
+}
+const resizeObserver = new ResizeObserver(handleResize)
+
 let floatBall: HTMLElement
+let floatBallBtn: HTMLElement
+let mousedownX: number, mousedownY: number
 onMounted(() => {
   floatBall = document.querySelector('.float-ball')!
+  floatBallBtn = document.querySelector('.float-ball-btn')!
+  resizeObserver.observe(floatBall)
   let relativeX: number, relativeY: number
-  floatBall.addEventListener('mousedown', (event) => {
-    isDragging = false
+  floatBallBtn.addEventListener('mousedown', (event) => {
+    mousedownX = event.clientX
+    mousedownY = event.clientY
+
     relativeX = event.clientX - floatBall.offsetLeft
     relativeY = event.clientY - floatBall.offsetTop
     window.addEventListener('mousemove', mousemove)
@@ -45,7 +160,6 @@ onMounted(() => {
   })
 
   function mousemove(event) {
-    isDragging = true
     let realX = event.clientX - relativeX < 0 ? 0 : event.clientX - relativeX
     let realY = event.clientY - relativeY < 0 ? 0 : event.clientY - relativeY
     if (realX + floatBall.offsetWidth > document.body.offsetWidth) {
@@ -58,7 +172,8 @@ onMounted(() => {
     floatBall.style.top = realY + 'px'
   }
 
-  function mouseup() {
+  function mouseup(event) {
+    isDragging = event.clientX !== mousedownX || event.clientY !== mousedownY ? true : false
     window.removeEventListener('mousemove', mousemove)
     window.removeEventListener('mouseup', mouseup)
   }
@@ -85,44 +200,71 @@ onUnmounted(() => {
 <style scoped lang="less">
 .float-ball {
   z-index: 1000;
-  width: 50px;
-  height: 50px;
   border-radius: 50%;
+  background-color: #1c212b;
   position: absolute;
   bottom: 20px;
   right: 20px;
-  border: 2px solid darkturquoise;
-  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
-}
+  transition:
+    width 0.8s ease,
+    height 0.8s ease;
 
-.float-ball::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 80px;
-  height: 80px;
-  background-color: darkturquoise;
-  opacity: 0.8;
-  border-radius: 30% 35% 40% 35%;
-  transform: translate(-50%, 35%);
-  animation: mave 5s linear infinite;
-}
+  .float-ball-wrapper {
+    z-index: 1000;
+    background-color: #1c212b;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-.float-ball::after {
-  content: '悬浮球';
-  position: absolute;
-  top: 15px;
-  left: 50%;
-  font-size: 8px;
-  font-weight: 700;
-  transform: translate(-50%, 0);
-}
+    .float-ball-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #f4f4f4;
+      border: 3px solid #8f9192;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+  }
 
-@keyframes mave {
-  100% {
-    transform: translate(-50%, 35%) rotate(360deg);
+  .menu-item {
+    width: 150px;
+    height: 150px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: top left;
+
+    .item-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      top: 13px;
+      left: 16px;
+      cursor: pointer;
+      transform-origin: center;
+    }
+
+    .icon-active {
+      background-color: #409eff;
+      color: #fff;
+    }
+  }
+
+  .menu-item:hover {
+    background-color: rgba(249, 249, 249, 0.1);
   }
 }
 

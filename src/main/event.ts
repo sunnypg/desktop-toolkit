@@ -108,8 +108,8 @@ export default function addEventListener(mainWindow, trayWindow) {
     return await getDeviceIdCode()
   })
 
-  ipcMain.handle('open-window', async (_, { route, remote_id }) => {
-    openWindow(route, remote_id, mainWindow)
+  ipcMain.handle('open-window', async (_, { route, remote_id, code }) => {
+    openWindow(route, remote_id, code, mainWindow)
   })
 
   ipcMain.handle('window-handle', (_, { id, type }) => {
