@@ -37,7 +37,7 @@ const props = defineProps<{
   allScreen: ScreenItem[]
 }>()
 const currentScreenId = defineModel('currentScreenId', { type: String, required: true })
-const emit = defineEmits(['screenChange', 'autoResize'])
+const emit = defineEmits(['screenChange', 'autoResize', 'hidePointer'])
 const showMenu = ref(false)
 let isDragging = false
 
@@ -69,10 +69,22 @@ const menuList = ref<MenuItem[]>([
     }
   },
   {
-    label: 'menu-item',
-    icon: 'Monitor',
+    label: '隐藏光标',
+    isCustom: true,
+    icon: 'icon-mouse-pointer',
     placement: 'right',
-    click: () => {}
+    click: () => {
+      const item = menuList.value[1]
+      if (item.label === '隐藏光标') {
+        item.label = '显示光标'
+        item.icon = 'icon-mouse-pointer-filled'
+        emit('hidePointer', true)
+      } else {
+        item.label = '隐藏光标'
+        item.icon = 'icon-mouse-pointer'
+        emit('hidePointer', false)
+      }
+    }
   },
   {
     label: 'menu-item',

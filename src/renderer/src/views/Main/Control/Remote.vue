@@ -1,17 +1,18 @@
 <template>
-  <div class="remote-view">
+  <div v-if="status === Status.VIDEO" class="remote-view">
     <FloatBall
       :current-screen-id="currentScreenId"
       :all-screen="allScreen"
       @screen-change="onScreenChange"
       @auto-resize="onAutoResize"
+      @hide-pointer="(val) => (isHidePointer = val)"
     />
     <video
       ref="videoRef"
       tabindex="-1"
       autoplay
       muted
-      :style="{ marginTop: isBrowser ? '' : '35px' }"
+      :style="{ marginTop: isBrowser ? '' : '35px', cursor: isHidePointer ? 'none' : 'default' }"
       @mousedown="onMouseClick"
       @mouseup="onMouseClick"
       @mousemove="onMouseMove"
@@ -19,6 +20,20 @@
       @keydown="onKeyboard"
       @keyup="onKeyboard"
     ></video>
+  </div>
+  <div v-if="status === Status.INPUT" class="remote">
+    <el-card class="remote-card">
+      <div class="remote-title">远程控制</div>
+      <el-form ref="remoteFormRef" :model="remoteForm" :rules="remoteFormRules">
+        <el-form-item label="远程码" prop="remote_id">
+          <el-input v-model="remoteForm.remote_id" placeholder="请输入远程设备码"></el-input>
+        </el-form-item>
+        <el-form-item label="验证码" prop="remote_code">
+          <el-input v-model="remoteForm.remote_code" placeholder="请输入远程设备验证码"></el-input>
+        </el-form-item>
+        <el-button type="primary" style="margin-left: 85%" @click="connectAction">连接</el-button>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
@@ -29,21 +44,53 @@ import { useRoute } from 'vue-router'
 import { ElLoading } from 'element-plus'
 import FloatBall from './FloatBall.vue'
 import { ScreenItem, Size } from './type'
+import router from '@renderer/router'
+import { ElNotification } from 'element-plus'
+import { mySessionStorage } from '@renderer/utils/storage'
+
+enum Status {
+  LOADING = 'loading',
+  VIDEO = 'video',
+  INPUT = 'input'
+}
 
 const route = useRoute()
-const remote_id = route.query.remote_id
-const remote_code = route.query.code
+const remoteFormRef = ref()
+const remoteForm = ref({
+  remote_id: route.query.remote_id as string,
+  remote_code: route.query.code as string
+})
+const remoteFormRules = {
+  remote_id: [
+    { required: true, message: '请输入远程设备码', trigger: 'blur' },
+    { min: 9, max: 9, message: '远程设备码长度为9位', trigger: 'blur' }
+  ],
+  remote_code: [
+    { required: true, message: '请输入远程设备验证码', trigger: 'blur' },
+    { min: 6, max: 6, message: '远程设备验证码长度为6位', trigger: 'blur' }
+  ]
+}
 
-const videoID = crypto.randomUUID ? crypto.randomUUID() : Date.now()
+const videoID = computed(() => {
+  if (mySessionStorage.getStorage('videoID')) {
+    return mySessionStorage.getStorage('videoID')
+  } else {
+    const id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+    mySessionStorage.setStorage('videoID', id)
+    return id
+  }
+})
 const videoRef = ref()
 const allScreen = ref<ScreenItem[]>([])
 const allScreenStream = ref<RTCTrackEvent['streams']>([])
 const currentScreenSize = ref<Size>()
 const currentScreenId = ref<string>('')
+const status = ref(Status.LOADING)
+const isHidePointer = ref(false)
+const isBrowser = !window.electron
 const peer: RTCPeerConnection = new RTCPeerConnection()
 let channel: RTCDataChannel
-let Loading: ReturnType<typeof ElLoading.service>
-const isBrowser = !window.electron
+let Loading: ReturnType<typeof ElLoading.service> | null
 let isAutoResizeVideo = true
 
 const resizeVideo = () => {
@@ -74,20 +121,11 @@ const onAutoResize = (isAutoResize: boolean) => {
 window.addEventListener('contextmenu', (e) => e.preventDefault())
 window.addEventListener('resize', resizeVideo)
 
-onMounted(() => {
-  Loading = ElLoading.service({
-    target: '.remote-view',
-    lock: true,
-    text: '正在启动远程控制...',
-    background: 'rgba(0, 0, 0, 0.7)'
-  })
-})
-
 peer.onicecandidate = ({ candidate }) => {
   if (candidate) {
     socket.emit('candidate', {
-      from: videoID,
-      to: remote_id,
+      from: videoID.value,
+      to: remoteForm.value.remote_id,
       candidate: candidate
     })
   }
@@ -118,21 +156,58 @@ const changeStream = async (id: string) => {
   videoRef.value.srcObject = stream
   videoRef.value.onloadedmetadata = () => {
     videoRef.value.play()
-    Loading.close()
+    Loading?.close()
+    Loading = null
   }
+}
+
+const connectAction = async () => {
+  if (!remoteFormRef.value) return
+  await remoteFormRef.value.validate(async (valid) => {
+    if (valid) {
+      await router.push('/')
+      router.push({
+        path: '/remote',
+        query: {
+          remote_id: remoteForm.value.remote_id,
+          code: remoteForm.value.remote_code
+        }
+      })
+    }
+  })
 }
 
 const socket = io('http://10.2.0.36:3000')
 socket.on('connect', async () => {
   console.log('websocket 连接成功')
-  socket.emit('create', videoID)
-  socket.emit('finish', {
-    from: videoID,
-    to: remote_id,
-    code: remote_code
-  })
+  socket.emit('create', videoID.value)
+  if (remoteForm.value.remote_id && remoteForm.value.remote_code) {
+    Loading = ElLoading.service({
+      target: '.remote-view',
+      lock: true,
+      text: '正在启动远程控制...',
+      background: 'rgba(0, 0, 0, 0.7)'
+    })
+
+    setTimeout(() => {
+      if (Loading) {
+        Loading.close()
+        Loading = null
+        ElMessage.error('连接超时，请检查远程设备码是否错误')
+        status.value = Status.INPUT
+      }
+    }, 3000)
+    socket.emit('finish', {
+      from: videoID.value,
+      to: remoteForm.value.remote_id,
+      code: remoteForm.value.remote_code
+    })
+  } else {
+    status.value = Status.INPUT
+  }
 
   socket.on('offer', async ({ offer }) => {
+    status.value = Status.VIDEO
     peer.ondatachannel = (event) => {
       channel = event.channel
       channel.onmessage = (event) => {
@@ -151,8 +226,8 @@ socket.on('connect', async () => {
     await peer.setLocalDescription(answer)
     socket.emit('answer', {
       answer,
-      from: videoID,
-      to: remote_id
+      from: videoID.value,
+      to: remoteForm.value.remote_id
     })
   })
 
@@ -160,11 +235,26 @@ socket.on('connect', async () => {
     await peer.addIceCandidate(candidate)
   })
 
-  socket.on('reply', ({ status }) => {
-    if (status === 'code-error') {
-      Loading.close()
+  socket.on('reply', ({ status: replyStatus }) => {
+    if (replyStatus === 'code-error') {
+      Loading?.close()
+      Loading = null
       ElMessage.error('验证码错误')
+      status.value = Status.INPUT
     }
+  })
+
+  socket.on('leave', async () => {
+    await router.push('/')
+    await router.push('/remote')
+    ElNotification({
+      title: '警告',
+      type: 'warning',
+      dangerouslyUseHTMLString: true,
+      message: `<div style="color: teal">对方已断开连接</div>`,
+      position: 'bottom-right',
+      duration: 0
+    })
   })
 
   socket.on('disconnect', () => {
@@ -182,7 +272,7 @@ const onMouseMove = throttle(
     const realY = e.offsetY * H
     channel.send(JSON.stringify({ type: e.type, x: realX, y: realY }))
   },
-  100,
+  30,
   { immediate: true, tail: true }
 )
 const onMouseClick = (e) => {
@@ -201,5 +291,25 @@ const onKeyboard = (e) => {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.remote {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #e1e6ed;
+
+  .remote-card {
+    width: 500px;
+    transform: translate(0, -50%);
+  }
+
+  .remote-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
 }
 </style>

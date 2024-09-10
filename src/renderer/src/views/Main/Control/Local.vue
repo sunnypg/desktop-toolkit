@@ -70,17 +70,17 @@
                 v-if="row.status === 'hide'"
                 type="primary"
                 size="small"
-                @click="handleWindle(row, 'show')"
+                @click="windowHandler(row, 'show')"
                 >显示</el-button
               >
               <el-button
                 v-if="row.status === 'show'"
                 type="info"
                 size="small"
-                @click="handleWindle(row, 'hide')"
+                @click="windowHandler(row, 'hide')"
                 >隐藏</el-button
               >
-              <el-button type="danger" size="small" @click="handleWindle(row, 'close')"
+              <el-button type="danger" size="small" @click="windowHandler(row, 'close')"
                 >断开</el-button
               >
             </template>
@@ -91,6 +91,11 @@
         <h3>正在控制您的设备</h3>
         <el-table :data="controlledList">
           <el-table-column prop="remote_id" label="设备码" />
+          <el-table-column label="终端">
+            <template #default="{ row }">
+              {{ row.remote_id.length > 9 ? '浏览器' : '客户端' }}
+            </template>
+          </el-table-column>
           <el-table-column label="操作">
             <template #default="{ row }">
               <el-button type="danger" size="small" @click="turnOff(row.remote_id)">断开</el-button>
@@ -263,6 +268,12 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
         from: localID.value,
         to: remoteID
       })
+
+      if (remoteID.length > 9) {
+        controlledList.value.push({
+          remote_id: remoteID
+        })
+      }
     })
 
     socket.on('answer', async ({ from, answer }) => {
@@ -315,7 +326,7 @@ const copy = async (text: string) => {
 //   await window.electron.ipcRenderer.invoke('open-window', { route: '/main/control' })
 // }
 
-const handleWindle = async (row, type) => {
+const windowHandler = async (row, type) => {
   await window.electron.ipcRenderer.invoke('window-handle', { id: row.remote_id, type })
   row.status = type
   if (type === 'close') {
