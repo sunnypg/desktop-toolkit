@@ -21,7 +21,7 @@
       @keyup="onKeyboard"
     ></video>
   </div>
-  <div v-if="status === Status.INPUT" class="remote">
+  <div v-if="status === Status.INPUT && isBrowser" class="remote">
     <el-card class="remote-card">
       <div class="remote-title">远程控制</div>
       <el-form ref="remoteFormRef" :model="remoteForm" :rules="remoteFormRules">
@@ -47,6 +47,7 @@ import { ScreenItem, Size } from './type'
 import router from '@renderer/router'
 import { ElNotification } from 'element-plus'
 import { mySessionStorage } from '@renderer/utils/storage'
+import { getSystemAndBrowserInfo } from '@renderer/utils/getSystemAndBrowserInfo'
 
 enum Status {
   LOADING = 'loading',
@@ -71,11 +72,15 @@ const remoteFormRules = {
   ]
 }
 
+const isBrowser = !window.electron
 const videoID = computed(() => {
   if (mySessionStorage.getStorage('videoID')) {
     return mySessionStorage.getStorage('videoID')
   } else {
-    const id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()
+    const { system, browser } = getSystemAndBrowserInfo()
+    const id =
+      (isBrowser ? `${system.name + system.version}_${browser.name + browser.version}_` : '') +
+      Date.now()
     mySessionStorage.setStorage('videoID', id)
     return id
   }
@@ -87,7 +92,6 @@ const currentScreenSize = ref<Size>()
 const currentScreenId = ref<string>('')
 const status = ref(Status.LOADING)
 const isHidePointer = ref(false)
-const isBrowser = !window.electron
 const peer: RTCPeerConnection = new RTCPeerConnection()
 let channel: RTCDataChannel
 let Loading: ReturnType<typeof ElLoading.service> | null
@@ -166,18 +170,19 @@ const connectAction = async () => {
   await remoteFormRef.value.validate(async (valid) => {
     if (valid) {
       await router.push('/')
-      router.push({
+      await router.push({
         path: '/remote',
         query: {
           remote_id: remoteForm.value.remote_id,
           code: remoteForm.value.remote_code
         }
       })
+      window.location.reload()
     }
   })
 }
 
-const socket = io('http://10.2.0.36:3000')
+const socket = io(import.meta.env.RENDERER_VITE_SOCKET_URL)
 socket.on('connect', async () => {
   console.log('websocket 连接成功')
   socket.emit('create', videoID.value)
@@ -255,6 +260,9 @@ socket.on('connect', async () => {
       position: 'bottom-right',
       duration: 0
     })
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
   })
 
   socket.on('disconnect', () => {

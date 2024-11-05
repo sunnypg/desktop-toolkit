@@ -134,23 +134,39 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
   // localID.value = crypto.randomUUID()
   localCode.value = code
 
-  socket = io('http://10.2.0.36:3000')
+  socket = io(import.meta.env.RENDERER_VITE_SOCKET_URL)
   socket.on('connect', async () => {
     console.log('websocket 连接成功')
     socket.emit('create', localID.value)
 
     // 收到对方请求
     socket.on('request', async ({ from, code }) => {
-      // 检测是否已经控制对方
-      if (remoteList.value.find((item) => item.remote_id === from)) {
-        socket.emit('reply', {
-          from: localID.value,
-          to: from,
-          status: 'controlled'
+      // 对方没输入验证码
+      if (!code) {
+        let notify: NotificationHandle | null = ElNotification({
+          message: h('div', { style: 'width: 280px' }, [
+            h('div', { style: 'color: teal' }, `设备【${from}】请求与你建立连接`),
+            h('div', { style: 'display: flex; justify-content: space-around;' }, [
+              h(ElButton, {
+                type: 'success',
+                text: true,
+                icon: Check,
+                onClick: () => notifyHandler(notify, from, 'agree')
+              }),
+              h(ElButton, {
+                type: 'danger',
+                text: true,
+                icon: Close,
+                onClick: () => notifyHandler(notify, from, 'disagree')
+              })
+            ])
+          ]),
+          duration: 0,
+          showClose: false,
+          position: 'bottom-right'
         })
         return
       }
-
       // 检测验证码是否正确
       if (code === localCode.value) {
         socket.emit('reply', {
@@ -162,31 +178,13 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
         controlledList.value.push({
           remote_id: from
         })
-        return
+      } else {
+        socket.emit('reply', {
+          from: localID.value,
+          to: from,
+          status: 'code-error'
+        })
       }
-
-      let notify: NotificationHandle | null = ElNotification({
-        message: h('div', { style: 'width: 280px' }, [
-          h('div', { style: 'color: teal' }, `设备【${from}】请求与你建立连接`),
-          h('div', { style: 'display: flex; justify-content: space-around;' }, [
-            h(ElButton, {
-              type: 'success',
-              text: true,
-              icon: Check,
-              onClick: () => notifyHandler(notify, from, 'agree')
-            }),
-            h(ElButton, {
-              type: 'danger',
-              text: true,
-              icon: Close,
-              onClick: () => notifyHandler(notify, from, 'disagree')
-            })
-          ])
-        ]),
-        duration: 0,
-        showClose: false,
-        position: 'bottom-right'
-      })
     })
 
     socket.on('reply', async ({ from, status, code }) => {
@@ -204,8 +202,8 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
         })
       } else if (status === 'disagree') {
         Notification('error', `设备【${from}】拒绝与你建立连接`)
-      } else if (status === 'controlled') {
-        Notification('warning', `设备【${from}】正在控制本机`)
+      } else if (status === 'code-error') {
+        Notification('error', `验证码错误`)
       }
     })
 
@@ -269,7 +267,7 @@ window.electron.ipcRenderer.invoke('id_code').then(({ system_id, code }) => {
         to: remoteID
       })
 
-      if (remoteID.length > 9) {
+      if (remoteID.includes('_')) {
         controlledList.value.push({
           remote_id: remoteID
         })
@@ -349,6 +347,10 @@ const requestRemote = () => {
   }
   if (remoteList.value.find((item) => item.remote_id === remoteForm.value.remoteID)) {
     Notification('error', '您正在控制此设备，请打开远程控制窗口')
+    return
+  }
+  if (controlledList.value.find((item) => item.remote_id === remoteForm.value.remoteID)) {
+    Notification('warning', `设备【${remoteForm.value.remoteID}】正在控制本机`)
     return
   }
   socket.emit('request', {

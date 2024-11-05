@@ -7,8 +7,10 @@ import createCutWindow from './module/screen/screenshot'
 import registerGlobalShortcut from './shortcut'
 import { createRecordingWindow } from './module/screen/recording'
 
+let mainWindow: BrowserWindow | null
+let willQuit = false
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     show: false,
@@ -22,7 +24,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -46,7 +48,7 @@ function createWindow(): void {
     {
       label: '还原',
       click: () => {
-        mainWindow.restore()
+        mainWindow?.restore()
       }
     },
     {
@@ -56,7 +58,7 @@ function createWindow(): void {
     {
       label: '最大化',
       click: () => {
-        mainWindow.maximize()
+        mainWindow?.maximize()
       }
     },
     {
@@ -75,42 +77,53 @@ function createWindow(): void {
     }
   })
 
-  // 避免启动多个app
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) {
-        mainWindow.restore()
-      }
-      mainWindow.focus()
-      mainWindow.show()
-    }
-  })
-
-  mainWindow.on('closed', () => {
-    if (process.platform !== 'darwin') {
+  mainWindow.on('close', (e) => {
+    if (willQuit) {
       app.quit()
+    } else {
+      e.preventDefault()
+      mainWindow?.hide()
     }
   })
 }
 
-app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.electron')
-
-  // 在开发中默认使用F12打开或关闭DevTools
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  createWindow()
-  createCutWindow()
-
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+// 避免启动多个app
+const gotTheLock = app.requestSingleInstanceLock()
+app.on('second-instance', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore()
+    }
+    mainWindow.focus()
+    mainWindow.show()
+  }
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.whenReady().then(() => {
+    electronApp.setAppUserModelId('com.electron')
+
+    // 在开发中默认使用F12打开或关闭DevTools
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
+
+    createWindow()
+    createCutWindow()
+
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+}
+
+app.on('before-quit', () => {
+  willQuit = true
+  mainWindow?.close()
+})
+
+app.on('activate', () => {
+  mainWindow?.show()
 })

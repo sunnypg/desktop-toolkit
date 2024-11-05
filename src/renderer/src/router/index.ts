@@ -78,15 +78,22 @@ const router = createRouter({
   ]
 })
 
-// 导航守卫
 router.beforeEach((to, _form, next) => {
   const token = myLocalStorage.getStorage('token')
   const visitor = myLocalStorage.getStorage('visitor')
+  const isBrowser = !window.electron
 
+  // 浏览器本地调试
+  if (isBrowser && to.path !== '/remote') {
+    next('/remote')
+    return
+  }
+  // 访客模式
   if (visitor) {
     next()
     return
   }
+  // 登录守卫
   if (to.path.startsWith('/main') && !token) {
     next('/login')
   } else {
