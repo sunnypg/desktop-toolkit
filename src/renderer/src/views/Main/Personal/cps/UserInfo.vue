@@ -44,6 +44,7 @@
     </el-descriptions-item>
   </el-descriptions>
   <div style="margin-left: 25px">
+    <el-button type="success" @click="checkUpdate">检测更新</el-button>
     <el-button type="primary" :loading="logoutLoading" @click="logout">退出</el-button>
     <el-button type="danger" :loading="destroyLoading" @click="destroy">注销</el-button>
   </div>
@@ -118,6 +119,8 @@ const userInfo = ref<IUserInfo>(myLocalStorage.getStorage('userInfo'))
 
 const isEdit = ref(false)
 const nicknameInput = ref()
+
+const checkUpdate = () => window.electron.ipcRenderer.send('checking-for-update')
 const showEdit = () => {
   isEdit.value = true
   nicknameInput.value.focus()

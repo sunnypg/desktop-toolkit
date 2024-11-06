@@ -1,3 +1,24 @@
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+dayjs.extend(utc)
+
+export function formatUTC(utcString: string, format: string = 'YYYY-MM-DD HH:mm:ss') {
+  const resultTime = dayjs.utc(utcString).utcOffset(8).format(format)
+  return resultTime
+}
+
+export function formatSizeUnits(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+  let unitIndex = 0
+
+  while (bytes >= 1024 && unitIndex < units.length - 1) {
+    bytes /= 1024
+    unitIndex++
+  }
+
+  return `${bytes.toFixed(2)} ${units[unitIndex]}`
+}
+
 export function throttle(fn, interval, { immediate = true, tail = false } = {}) {
   // 用来记录开始时间
   let start = 0

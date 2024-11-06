@@ -6,6 +6,7 @@ import createTray from './tray'
 import createCutWindow from './module/screen/screenshot'
 import registerGlobalShortcut from './shortcut'
 import { createRecordingWindow } from './module/screen/recording'
+import updateAppAction from './update'
 
 let mainWindow: BrowserWindow | null
 let willQuit = false
@@ -25,6 +26,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    mainWindow && updateAppAction(mainWindow)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

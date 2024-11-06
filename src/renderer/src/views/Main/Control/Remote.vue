@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 import { io } from 'socket.io-client'
-import { throttle } from '@renderer/utils'
+import { throttle } from '@renderer/utils/utils'
 import { useRoute } from 'vue-router'
 import { ElLoading } from 'element-plus'
 import FloatBall from './FloatBall.vue'

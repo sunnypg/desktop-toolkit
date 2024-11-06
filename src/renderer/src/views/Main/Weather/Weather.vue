@@ -15,7 +15,7 @@
 
 <script setup lang="ts">
 import * as echarts from 'echarts'
-import { formatUTC } from '@renderer/utils/dateFormat'
+import { formatUTC } from '@renderer/utils/utils'
 import getWeather from './getWeather'
 
 const weatherRef = ref()

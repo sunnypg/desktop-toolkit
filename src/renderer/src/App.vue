@@ -4,11 +4,13 @@
       <MainController></MainController>
       <router-view></router-view>
     </el-config-provider>
+    <UpdateAppDialog />
   </div>
 </template>
 
 <script setup lang="ts">
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import UpdateAppDialog from '@renderer/components/UpdateAppDialog.vue'
 </script>
 
 <style lang="less" scoped>
