@@ -9,7 +9,9 @@
         </p>
         <el-button type="primary" link @click="router.push('/login')">去登录</el-button>
         <el-button type="primary" link @click="router.push('/')">继续游览</el-button>
-        <el-button type="primary" link @click="checkUpdate">检测更新</el-button>
+        <el-button type="primary" link :loading="checkStatus" @click="checkUpdate"
+          >检测更新</el-button
+        >
       </template>
       <el-tabs v-else tab-position="left" style="height: calc(100vh - 120px)">
         <el-tab-pane label="个人信息"> <UserInfo /></el-tab-pane>
@@ -24,8 +26,10 @@ import UserInfo from './cps/UserInfo.vue'
 import Setting from './cps/Setting.vue'
 import { myLocalStorage } from '@renderer/utils/storage'
 import { useRouter } from 'vue-router'
+import useCheckUpdate from '@renderer/hooks/useCheckUpdate'
 
 const visitor = myLocalStorage.getStorage('visitor')
 const router = useRouter()
+const { checkStatus } = useCheckUpdate()
 const checkUpdate = () => window.electron.ipcRenderer.send('checking-for-update')
 </script>

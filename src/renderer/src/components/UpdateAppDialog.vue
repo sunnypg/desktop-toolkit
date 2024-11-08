@@ -63,6 +63,7 @@ import { ref } from 'vue'
 import { ElDialog, ElProgress } from 'element-plus'
 import { version } from '../../../../package.json'
 import { formatUTC, formatSizeUnits } from '../utils/utils'
+import useCheckUpdate from '@renderer/hooks/useCheckUpdate'
 
 type UpdateHandleType = 'download-update' | 'quit-and-install'
 const updateHandle = (type: UpdateHandleType) => window.electron.ipcRenderer.send(type)
@@ -70,37 +71,9 @@ const updateHandle = (type: UpdateHandleType) => window.electron.ipcRenderer.sen
 const updateDialogVisible = ref(false)
 const updateInfo = ref<{ data: any; msg: string; event: string }>()
 
-window.electron.ipcRenderer.on('updater-event', (_, res) => {
-  switch (res.event) {
-    case 'checking-for-update':
-      console.log(res)
-      break
-    case 'update-available':
-      console.log(res)
-      updateDialogVisible.value = true
-      updateInfo.value = res
-      break
-    case 'update-not-available':
-      console.log(res)
-      updateDialogVisible.value = true
-      updateInfo.value = res
-      break
-    case 'download-progress':
-      console.log(res)
-      updateDialogVisible.value = true
-      res.data.total = formatSizeUnits(res.data.total)
-      res.data.bytesPerSecond = formatSizeUnits(res.data.bytesPerSecond) + '/s'
-      res.data.percent = parseFloat(res.data.percent.toFixed(2))
-      updateInfo.value = res
-      break
-    case 'update-downloaded':
-      console.log(res)
-      updateDialogVisible.value = true
-      updateInfo.value = res
-      break
-    default:
-      break
-  }
+useCheckUpdate((res) => {
+  updateDialogVisible.value = true
+  updateInfo.value = res
 })
 </script>
 

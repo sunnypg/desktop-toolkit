@@ -44,7 +44,7 @@
     </el-descriptions-item>
   </el-descriptions>
   <div style="margin-left: 25px">
-    <el-button type="success" @click="checkUpdate">检测更新</el-button>
+    <el-button type="success" :loading="checkStatus" @click="checkUpdate">检测更新</el-button>
     <el-button type="primary" :loading="logoutLoading" @click="logout">退出</el-button>
     <el-button type="danger" :loading="destroyLoading" @click="destroy">注销</el-button>
   </div>
@@ -108,6 +108,7 @@
 import router from '@renderer/router'
 import avatar from '@renderer/assets/images/avatar.jpg'
 import { myLocalStorage } from '@renderer/utils/storage'
+import useCheckUpdate from '@renderer/hooks/useCheckUpdate'
 
 interface IUserInfo {
   username: string
@@ -119,7 +120,7 @@ const userInfo = ref<IUserInfo>(myLocalStorage.getStorage('userInfo'))
 
 const isEdit = ref(false)
 const nicknameInput = ref()
-
+const { checkStatus } = useCheckUpdate()
 const checkUpdate = () => window.electron.ipcRenderer.send('checking-for-update')
 const showEdit = () => {
   isEdit.value = true

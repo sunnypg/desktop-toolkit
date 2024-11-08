@@ -1,3 +1,4 @@
-provider: generic
-url: https://oss.xuexiluxian.cn/xiaoluxian-crm/releases
+provider: github
+owner: 'sunnypg'
+repo: 'desktop-toolkit'
 updaterCacheDirName: desktop-toolkit-updater

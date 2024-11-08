@@ -10,14 +10,23 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
+  - node_modules/ffmpeg-static
+  - out/main/chunks/*.node
   - resources/**
 win:
   executableName: 桌面工具箱
 nsis:
+  oneClick: false
+  perMachine: true
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
@@ -39,7 +48,10 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://oss.xuexiluxian.cn/xiaoluxian-crm/releases
+  provider: github
+  owner: 'sunnypg'
+  repo: 'desktop-toolkit'
+  token: ''
+  releaseType: 'release'
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
